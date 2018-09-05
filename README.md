@@ -1,0 +1,2 @@
+# MusSync
+Music Service Synchronizer
