@@ -1,3 +1,8 @@
+import akka.actor._
+
 object MusSyncApp extends App {
-  Console.println("Running main app")
+    val system = ActorSystem("HttpAsyncSystem")
+
+    val master = system.actorOf(Props(new HttpCreator()))
+    master ! HandleHttp(5) 
 }
