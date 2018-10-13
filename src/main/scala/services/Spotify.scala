@@ -45,7 +45,7 @@ object SpotifyUtility {
   }
 
   def tokenize() : JsValue = {
-    val authCode = "AQDprw8MwhpSFAJeY2DsvwM2V7tt1woAn45BauK-TFvtjSQCG6UFjBM1mIzVG2r8uKSup4RA5Eo9368vOmqcx7fQ483dAI_BGz2KqN2qo7M4gqkC2w5O8zg2DwCTGbX5PTHRWFPuGajewssvz6SdH4bBD6QlMHhjrm3gZeQBBmiDUCA91x8AgzdB7NorhZmq5QPMe0uJgIdNPsPlSQ9TpQ7X19WqPdZeJKdnljVkVK2dTFpn28X-"
+    val authCode = "AQDYj_hW2v7cWHMXBFv7-zbkjsKhC5BUTMtli5f6dYZsVCKnwCLL-z4QszFo8bIUZL5bQkv2e0EGx7sWjRwp4KNkEvc8M4bOMeFbiWNxbNvmjHMYxuCTQbt2atL9wyG-HCkH0IxETvPm5VzHdwm0nLrwGfyMgFdVKDKl8MNTgj0ony7z1bmsiXYE808JxWCHVjLnNb_GZiOVutIUypOoZzCpG6eEKB34yX2EyrYESIdV-2EaT3U1"
     val tokenUri = uri"https://accounts.spotify.com/api/token"
     val map : Map[String, String] = Map("grant_type" -> "authorization_code", "code" -> authCode, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
 
@@ -59,7 +59,31 @@ object SpotifyUtility {
   }
 
   def get_artists(token : String) : Unit = {
-    val artistString = apiEndpoint + "/v1/me/following?type=artist"
+    // val artistString = apiEndpoint + "/v1/me/following?type=artist"
+    val artistString = apiEndpoint + "/v1/fishehh/following?type=artist"
+    val artistUri = uri"$artistString"
+    
+    implicit val backend = HttpURLConnectionBackend()
+    val request = sttp.auth.bearer(token).get(artistUri)
+    val response = request.send()
+
+    Console.println(response)
+  }
+
+  def get_playlists(token : String) : Unit = {
+    // val artistString = apiEndpoint + "/v1/me/following?type=artist"
+    val artistString = apiEndpoint + "/v1/users/fishehh/playlists"
+    val artistUri = uri"$artistString"
+    
+    implicit val backend = HttpURLConnectionBackend()
+    val request = sttp.auth.bearer(token).get(artistUri)
+    val response = request.send()
+
+    Console.println(response)
+  }
+
+  def get_user(token : String) : Unit = {
+    val artistString = apiEndpoint + "/v1/users/fishehh"
     val artistUri = uri"$artistString"
     
     implicit val backend = HttpURLConnectionBackend()
@@ -70,10 +94,7 @@ object SpotifyUtility {
   }
 }
 
-
-
 object SpotifyTest extends App {
-
     // Get a token
     // val response = SpotifyUtility.tokenize()
     // val token = (response \ "access_token").asOpt[String] match {
@@ -84,10 +105,9 @@ object SpotifyTest extends App {
     // Console.println(token)
     // Get a token: FINISHED
 
-    val token = "BQD9s6GQPbA1RSktPxfMHKT4Y-sESDLqxZa6ChVLStuVl9Q7H0gd74wZ8XsjDx5U4obdKUaAwfOi59Gu5kW3r3rbesxZN-dy69tCIUBJp_QOLJydlwhjkq0sF6D10eneOWE5BFFGSx1Xk-o9gq1ZQ1i2MBWwQFk"
+    val token = "BQDgtI25-oL2PApN4w-3UA9XsvZPG56dKKmuzfWjLRTnv3Zi1hkBHE9GG-nEoAGbd2MDYvzBlODiekGj2xohoc7OMG_MqxSU5fAmWJyDjI_MjH1gGNqBr_wVQ4oMLTkul0BPDRVsRjpar_AHucXz1I1tcKeHCmI"
 
-    SpotifyUtility.get_artists(token) 
-    
+    SpotifyUtility.get_user(token) 
 
     // implicit val system = ActorSystem("Spotify-Api-Test")
     // implicit val materializer = ActorMaterializer()
