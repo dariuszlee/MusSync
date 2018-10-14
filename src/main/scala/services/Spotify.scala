@@ -17,6 +17,7 @@ import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 
 final case class SpotifyRelease(name : String)
+final case class SpotifyPlaylist(name : String)
 
 object SpotifyUtility {
   val apiEndpoint = "https://api.spotify.com"
@@ -25,7 +26,7 @@ object SpotifyUtility {
   val client_secret = "7eb1825fb44845b8bd463f9e883fa9a9"
   val callback = "https://example.com/callback"
 
-  val fullUri = "https://accounts.spotify.com/en/authorize?client_id=40b76927fb1a4841b2114bcda79e829a&response_type=code&redirect_uri=https:%2F%2Fexample.com%2Fcallback&scope=user-follow-read%20user-read-email&state=34fFs29kd09&show_dialog=true"
+  val fullUri = "https://accounts.spotify.com/en/authorize?client_id=40b76927fb1a4841b2114bcda79e829a&response_type=code&redirect_uri=http:%2F%2Flocalhost:8080&scope=user-follow-read%20user-read-email&state=34fFs29kd09&show_dialog=true"
 
   def collect() : List[SpotifyRelease] = {
     val sourceData = SpotifyRelease("SomeGuy") :: SpotifyRelease("SomeOtherGuy") :: Nil
@@ -45,7 +46,7 @@ object SpotifyUtility {
   }
 
   def tokenize() : JsValue = {
-    val authCode = "AQDYj_hW2v7cWHMXBFv7-zbkjsKhC5BUTMtli5f6dYZsVCKnwCLL-z4QszFo8bIUZL5bQkv2e0EGx7sWjRwp4KNkEvc8M4bOMeFbiWNxbNvmjHMYxuCTQbt2atL9wyG-HCkH0IxETvPm5VzHdwm0nLrwGfyMgFdVKDKl8MNTgj0ony7z1bmsiXYE808JxWCHVjLnNb_GZiOVutIUypOoZzCpG6eEKB34yX2EyrYESIdV-2EaT3U1"
+    val authCode = "AQB4-YeK2K6iSmvlDtbfoIsMZkMNHJjOP0sxRA9gdaZJe1SXIKNO9QDcGYpmFkX9fg1aqrdgMzGqi9vQsDYQ04jI4XF5MLbakKHEF1sNNIhmbl_rpBX3N0pCsN02PYJI7mMW32bAzNWBDLQRIsV1LLqTgCEsupAkX-6tMlgZBwh3NgxVQ92R5apZw1nTPkEICUcfDl2wnf43uP3AGQPQIAxcn7__u8_N434sYJPl7w0ACCD-p3vJ"
     val tokenUri = uri"https://accounts.spotify.com/api/token"
     val map : Map[String, String] = Map("grant_type" -> "authorization_code", "code" -> authCode, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
 
@@ -70,16 +71,20 @@ object SpotifyUtility {
     Console.println(response)
   }
 
-  def get_playlists(token : String) : Unit = {
-    // val artistString = apiEndpoint + "/v1/me/following?type=artist"
-    val artistString = apiEndpoint + "/v1/users/fishehh/playlists"
-    val artistUri = uri"$artistString"
+  // def get_playlists(token : String, user : String) : List[SpotifyPlaylist] = {
+  def get_playlists(token : String, user : String) : Unit = {
+    val artistUri = uri"$apiEndpoint/v1/users/$user/playlists"
     
     implicit val backend = HttpURLConnectionBackend()
     val request = sttp.auth.bearer(token).get(artistUri)
     val response = request.send()
 
-    Console.println(response)
+    val data = response.body match {
+      case Left(x) => Json.parse(x)
+      case Right(x) => Json.parse(x)
+    }
+
+    Console.println(data)
   }
 
   def get_user(token : String) : Unit = {
@@ -90,24 +95,26 @@ object SpotifyUtility {
     val request = sttp.auth.bearer(token).get(artistUri)
     val response = request.send()
 
-    Console.println(response)
+    val data = response.body match {
+      case Left(x) => Json.parse(x)
+      case Right(x) => Json.parse(x)
+    }
+    Console.println(data)
   }
 }
 
 object SpotifyTest extends App {
     // Get a token
-    // val response = SpotifyUtility.tokenize()
-    // val token = (response \ "access_token").asOpt[String] match {
-    //   case None => "No token"
-    //   case Some(s) => s
-    // }
-
-    // Console.println(token)
+    val response = SpotifyUtility.tokenize()
+    val token = (response \ "access_token").asOpt[String] match {
+      case None => "No token"
+      case Some(s) => s
+    }
+    Console.println(token)
     // Get a token: FINISHED
 
-    val token = "BQDgtI25-oL2PApN4w-3UA9XsvZPG56dKKmuzfWjLRTnv3Zi1hkBHE9GG-nEoAGbd2MDYvzBlODiekGj2xohoc7OMG_MqxSU5fAmWJyDjI_MjH1gGNqBr_wVQ4oMLTkul0BPDRVsRjpar_AHucXz1I1tcKeHCmI"
-
-    SpotifyUtility.get_user(token) 
+    // val token = "BQDgtI25-oL2PApN4w-3UA9XsvZPG56dKKmuzfWjLRTnv3Zi1hkBHE9GG-nEoAGbd2MDYvzBlODiekGj2xohoc7OMG_MqxSU5fAmWJyDjI_MjH1gGNqBr_wVQ4oMLTkul0BPDRVsRjpar_AHucXz1I1tcKeHCmI"
+    SpotifyUtility.get_playlists(token, "fishehh") 
 
     // implicit val system = ActorSystem("Spotify-Api-Test")
     // implicit val materializer = ActorMaterializer()
