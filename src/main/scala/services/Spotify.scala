@@ -26,7 +26,7 @@ object SpotifyUtility {
   val client_secret = "7eb1825fb44845b8bd463f9e883fa9a9"
   val callback = "https://example.com/callback"
 
-  val fullUri = "https://accounts.spotify.com/en/authorize?client_id=40b76927fb1a4841b2114bcda79e829a&response_type=code&redirect_uri=http:%2F%2Flocalhost:8080&scope=user-follow-read%20user-read-email&state=34fFs29kd09&show_dialog=true"
+  val fullUri = "https://accounts.spotify.com/en/authorize?client_id=40b76927fb1a4841b2114bcda79e829a&response_type=code&redirect_uri=http:%2F%2Flocalhost:8080/callback&scope=user-follow-read%20user-read-email&state=34fFs29kd09&show_dialog=true"
 
   def collect() : List[SpotifyRelease] = {
     val sourceData = SpotifyRelease("SomeGuy") :: SpotifyRelease("SomeOtherGuy") :: Nil
