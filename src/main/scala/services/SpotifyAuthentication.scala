@@ -1,5 +1,7 @@
 import scala.io.StdIn
 import scala.concurrent.Future
+import scala.util.Success
+import scala.util.Failure
 
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
@@ -16,12 +18,19 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
 
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.duration._
+
+
 import com.softwaremill.sttp._
 
 import play.api.libs.json.Json
+import play.api.libs.json.JsValue
 
 object SessionActor {
   case class SessionData(token : String, refreshToken : String)
+  case object SessionRequest
 }
 
 class SessionActor extends PersistentActor {
@@ -35,6 +44,7 @@ class SessionActor extends PersistentActor {
       log.info("New Session data: " + s)
       session = s
     }
+    case SessionRequest => sender ! session
   }
 
   def receiveRecover : PartialFunction[Any, Unit] = {
@@ -44,11 +54,14 @@ class SessionActor extends PersistentActor {
  
 object TokenActor {
   case class AuthCode(code : String)
+  case object RefreshToken
   def props(sessionActor : ActorRef): Props = Props(new TokenActor(sessionActor))
 }
 
 class TokenActor(sessionActor : ActorRef) extends Actor {
   import TokenActor._
+  import SessionActor._
+  import context.dispatcher
 
   val client_id = "40b76927fb1a4841b2114bcda79e829a"
   val client_secret = "7eb1825fb44845b8bd463f9e883fa9a9"
@@ -56,19 +69,43 @@ class TokenActor(sessionActor : ActorRef) extends Actor {
 
   val log = Logging(context.system, this)
   implicit val backend = HttpURLConnectionBackend()
+  implicit val timeout : Timeout = 1 second
   def receive = {
     case AuthCode(s) => 
     {
-      log.info("Auth-Code: " + s)
       val tokenUri = uri"https://accounts.spotify.com/api/token"
       val map : Map[String, String] = Map("grant_type" -> "authorization_code", "code" -> s, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
       val request = sttp.body(map).post(tokenUri)
       val response = request.send()
-      val data = response.body match {
+      val data : JsValue = response.body match {
         case Left(x) => Json.parse(x)
-        case Right(x) => Json.parse(x).toString()
+        case Right(x) => Json.parse(x)
       }
+      sessionActor ! SessionData((data \ "access_token").as[String], (data \ "refresh_token").as[String])
+    }
+    case RefreshToken =>
+    {
 
+      val future = ask(sessionActor, SessionRequest)
+      future onComplete {
+        case Success(s : SessionData) => {
+          val tokenUri = uri"https://accounts.spotify.com/api/token"
+          val map : Map[String, String] = Map("grant_type" -> "refresh_token", "refresh_token" -> s.refreshToken, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
+          val request = sttp.body(map).post(tokenUri)
+          val response = request.send()
+          val data : JsValue = response.body match {
+            case Left(x) => Json.parse(x)
+            case Right(x) => Json.parse(x)
+          }
+          println(data)
+        }
+        case Success(s) => {
+          println(s)
+        }
+        case Failure(s) => {
+          println(s)
+        }
+      }
     }
     case _ => throw new Exception("Not valid")
   }
@@ -76,20 +113,41 @@ class TokenActor(sessionActor : ActorRef) extends Actor {
 
 object SpotifyAuthentication extends App {
   import TokenActor.AuthCode
+  import TokenActor.RefreshToken
+  import SessionActor.SessionRequest
+  import SessionActor.SessionData
 
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
+  implicit val timeout : Timeout = 1 second
+
   val dbActor = system.actorOf(Props[SessionActor], "storeToken")
   val tokenActor = system.actorOf(TokenActor.props(dbActor), "getToken")
 
   val route = {
-    path("") {
+    path("session") {
       get {
-        complete {
-          "<html><body>Hello world!</body></html>"
+        onComplete(ask(dbActor, SessionRequest)) {
+          case Success(value : SessionData) => { 
+            println(value)
+            complete(Json.toJson(Map("token" -> value.token, "refresh" -> value.refreshToken)).toString())
+          }
+          case Success(value) => { 
+            complete("Successfully but with no value")
+          }
+          case Failure(ex)    => {
+            println(ex)
+            complete("Failure")
+          }
         }
+      }
+    } ~
+    path("refresh") {
+      get {
+        tokenActor ! RefreshToken
+        complete("Refreshed")
       }
     } ~
     path("callback") {
