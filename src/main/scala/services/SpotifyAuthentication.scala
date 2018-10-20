@@ -5,10 +5,12 @@ import scala.util.Failure
 
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
-import akka.persistence.PersistentActor
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.server.Directives._
+
+import akka.persistence.PersistentActor
+import akka.persistence.SnapshotOffer
 
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
@@ -30,6 +32,7 @@ import play.api.libs.json.JsValue
 
 object SessionActor {
   case class SessionData(token : String, refreshToken : String)
+  case class RefreshData(token : String)
   case object SessionRequest
 }
 
@@ -41,14 +44,25 @@ class SessionActor extends PersistentActor {
   val log = Logging(context.system, this)
   def receiveCommand = {
     case s : SessionData => {
-      log.info("New Session data: " + s)
       session = s
+      saveSnapshot(session)
     }
     case SessionRequest => sender ! session
+    case RefreshData(token) => {
+      session = SessionData(token, session.refreshToken)
+      saveSnapshot(session)
+    }
   }
 
   def receiveRecover : PartialFunction[Any, Unit] = {
-    case s : String => log.info(s)
+    case s : SessionData => {
+      log.info(s"Restore Token $s")
+      session = s
+    }
+    case SnapshotOffer(_, s : SessionData) => {
+      session = s
+      log.info(s"Restore Token $s")
+    }
   }
 }
  
@@ -85,24 +99,23 @@ class TokenActor(sessionActor : ActorRef) extends Actor {
     }
     case RefreshToken =>
     {
-
       val future = ask(sessionActor, SessionRequest)
-      future onComplete {
+      val toSendBack = sender()
+      val data = future onComplete {
         case Success(s : SessionData) => {
           val tokenUri = uri"https://accounts.spotify.com/api/token"
           val map : Map[String, String] = Map("grant_type" -> "refresh_token", "refresh_token" -> s.refreshToken, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
           val request = sttp.body(map).post(tokenUri)
           val response = request.send()
-          val data : JsValue = response.body match {
-            case Left(x) => Json.parse(x)
-            case Right(x) => Json.parse(x)
+          val data : String = response.body match {
+            case Right(x) => (Json.parse(x) \ "access_token").as[String] 
+            case _ => throw new Exception("Refresh failed")
           }
-          println(data)
+          println("Refreshed Token: " + data)
+          sessionActor ! RefreshData(data)
+          toSendBack ! AuthCode(data)
         }
-        case Success(s) => {
-          println(s)
-        }
-        case Failure(s) => {
+        case s : Any => {
           println(s)
         }
       }
@@ -121,7 +134,7 @@ object SpotifyAuthentication extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  implicit val timeout : Timeout = 1 second
+  implicit val timeout : Timeout = 5 second
 
   val dbActor = system.actorOf(Props[SessionActor], "storeToken")
   val tokenActor = system.actorOf(TokenActor.props(dbActor), "getToken")
@@ -146,8 +159,15 @@ object SpotifyAuthentication extends App {
     } ~
     path("refresh") {
       get {
-        tokenActor ! RefreshToken
-        complete("Refreshed")
+        onComplete(ask(tokenActor, RefreshToken)) {
+          case Success(s : AuthCode) => {
+            complete(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, 
+              Json.toJson(Map("token" -> s.code)).toString())))
+          }
+          case _ => {
+            complete(StatusCode.int2StatusCode(500))
+          }
+        }
       }
     } ~
     path("callback") {
