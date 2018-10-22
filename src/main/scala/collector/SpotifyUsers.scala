@@ -3,10 +3,18 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.duration.TimeUnit
 import scala.concurrent.Await
 
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
+
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.actor.Actor
 import akka.actor.Props
+
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.duration._
 
 import akka.stream.ActorMaterializer
 
@@ -44,7 +52,7 @@ object UserPlaylistActor {
     val playlistUri = base_api_url + user_playlist_uri(id)
     val playlistsResponse = sttp.auth.bearer(token).get(uri"$playlistUri").send()
     val data = playlistsResponse match {
-      case Response(Left(x), 401, _, _, _) => throw new Exception("Implement Refresh")
+      case Response(Left(x), 401, _, _, _) => 
       case Response(Right(x), _, _, _, _) => Json.parse(x)
       case Response(Left(x), _, _, _, _) => throw new Exception("Unknown error: " + Json.parse(x).toString())
     }
@@ -52,17 +60,20 @@ object UserPlaylistActor {
   }
 }
 
-class UserPlaylistActor extends Actor {
+class UserPlaylistActor(reqActor : ActorRef) extends Actor {
   import UserPlaylistActor.UserId
+  import context.dispatcher
+
   val log = Logging(context.system, this)
-
-  // implicit val timeout : Timeout = 1 second
-
+  implicit val timeout : Timeout = 5 second
 
   def receive = {
     case UserId(id) => {
-      val data = UserPlaylistActor.get_playlists(id)
-      println(data)
+      val playlistUri = UserPlaylistActor.base_api_url + UserPlaylistActor.user_playlist_uri(id)
+      ask(reqActor, SpotifyRequestActor.SpotifyRequest(playlistUri)) onComplete({
+        case Success(x) => println(x)
+        case Failure(x) => println(x)
+      })
     }
   }
 }
@@ -74,7 +85,9 @@ object SpotifyCrawler extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  val userPlaylistActor = system.actorOf(Props[UserPlaylistActor], "upActor")
+  val requestActor = system.actorOf(Props[SpotifyRequestActor], "reqActor")
+
+  val userPlaylistActor = system.actorOf(Props(new UserPlaylistActor(requestActor)), "upActor")
   userPlaylistActor ! UserId("fishehh")
 
   readLine()
