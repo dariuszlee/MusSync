@@ -53,7 +53,6 @@ class SpotifyRequestActor extends Actor with Logging {
   var token : String = refresh_token()
   def receive = {
     case SpotifyRequest(uri) => {
-      logger.error("Logging working")
       val formattedUri = uri"$uri"
       val ret = Try(sttp.auth.bearer(token).get(formattedUri).send()).flatMap({
         case Response(_, 401, _, _, _) => {

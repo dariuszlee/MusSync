@@ -4,6 +4,8 @@ import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
 
+import akka.routing.SmallestMailboxPool
+
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.actor.Actor
@@ -15,6 +17,8 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 
 import play.api.libs.json.JsValue
+import play.api.libs.json.JsArray
+import play.api.libs.json.JsNull
 import play.api.libs.json.JsDefined
 
 object SpotifyFollow {
@@ -34,14 +38,25 @@ class SpotifyFollow(reqActor : ActorRef) extends Actor {
       val requestUri = uri getOrElse getFollowersUri
       ask(reqActor, SpotifyRequestActor.SpotifyRequest(requestUri)) onComplete({
         case Success(SpotifyResponse(y)) => {
-          println(y \ "artists" \ "next")
-          
           Try((y \ "artists" \ "next")) getOrElse None match {
-            case Some(JsDefined(null)) => println("Finished")
-            case Some(JsDefined(x : String)) => spotifyFollowActors ! GetFollows(Some(x))
+            case JsDefined(JsNull) => println("Finished Getting Next's Api Calls.")
+            case JsDefined(x : JsValue) => {
+              val nextUri = x.as[String]
+              spotifyFollowActors ! GetFollows(Some(nextUri))
+            }
             case None => println("Operation failed")
           }
-          
+          Try(y \ "artists" \ "items") getOrElse None match {
+            case JsDefined(artists : JsValue) => {
+              // val nextUri = x.as[String]
+              // spotifyFollowActors ! GetFollows(Some(nextUri))
+              for(artist <- artists.as[List[JsValue]]){
+                println(artist \ "id")
+
+              }
+            }
+            case None => println("Operation failed")
+          }
         }
         case Success(x) => println("Unknown response type: " + x)
         case Failure(x) => println(x)
@@ -56,10 +71,11 @@ object SpotifyReleaseManager extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  val requestActor = system.actorOf(Props[SpotifyRequestActor], "reqActor")
+  val routeRequest = system.actorOf(SmallestMailboxPool(5).props(Props[SpotifyRequestActor]), "requestRouter")
 
-  val userPlaylistActor = system.actorOf(Props(new SpotifyFollow(requestActor)), "spotifyFollow")
-  userPlaylistActor ! GetFollows(None)
+
+  val userFollows = system.actorOf(Props(new SpotifyFollow(routeRequest)), "spotifyFollow")
+  userFollows! GetFollows(None)
 
   readLine()
   system.terminate()
