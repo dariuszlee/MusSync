@@ -21,6 +21,21 @@ import play.api.libs.json.JsArray
 import play.api.libs.json.JsNull
 import play.api.libs.json.JsDefined
 
+object LogActor {
+  case object LogSomething
+}
+
+class LogActor extends Actor with akka.actor.ActorLogging {
+  import LogActor._
+
+  def receive = {
+    case LogSomething => {
+      log.info("Logging something here: ")
+      log.debug("Lets log something else: {}", 2)
+    }
+  }
+}
+
 object SpotifyFollow {
   case class GetFollows(uri : Option[String])
   val getFollowersUri : String = "https://api.spotify.com/v1/me/following?type=artist"
@@ -67,15 +82,18 @@ class SpotifyFollow(reqActor : ActorRef) extends Actor {
 
 object SpotifyReleaseManager extends App {
   import SpotifyFollow._
+  import LogActor._
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  val routeRequest = system.actorOf(SmallestMailboxPool(5).props(Props[SpotifyRequestActor]), "requestRouter")
+  // val routeRequest = system.actorOf(SmallestMailboxPool(5).props(Props[SpotifyRequestActor]), "requestRouter")
 
 
-  val userFollows = system.actorOf(Props(new SpotifyFollow(routeRequest)), "spotifyFollow")
-  userFollows! GetFollows(None)
+  // val userFollows = system.actorOf(Props(new SpotifyFollow(routeRequest)), "spotifyFollow")
+  // userFollows! GetFollows(None)
+  val logActor = system.actorOf(Props[LogActor], "logActor")
+  logActor ! LogSomething
 
   readLine()
   system.terminate()

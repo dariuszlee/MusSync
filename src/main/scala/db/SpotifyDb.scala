@@ -4,28 +4,26 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.stream.ActorMaterializer
 
-object SpotifyDb {
-  case object InsertDbItem
+object SpotifyDbActor {
+  case object InsertSpotifyItem
 }
 
-class SpotifyDb extends Actor {
-  import SpotifyDb._
+class SpotifyDbActor extends Actor {
+  import SpotifyDbActor._
   def receive = {
-    case InsertDbItem => { 
-      println("Inserting item")
-    }
+    case InsertSpotifyItem => println("")
   }
 }
 
 object SpotifyDbTests extends App {
-  import SpotifyDb._
+  import SpotifyDbActor._
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  val userFollows = system.actorOf(Props(new SpotifyDb()), "spotifyDb")
+  val dbActor = system.actorOf(Props(new SpotifyDbActor()), "spotifyDb")
 
-  userFollows ! InsertDbItem
+  dbActor ! InsertSpotifyItem
 
   readLine()
   system.terminate()
