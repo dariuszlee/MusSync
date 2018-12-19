@@ -2,11 +2,6 @@ import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
 
-import org.apache.logging.log4j.scala.Logging
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
-import org.apache.logging.log4j.Level
-
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
@@ -20,43 +15,46 @@ import play.api.libs.json.Json
 import play.api.libs.json.JsValue
 import com.softwaremill.sttp._
 
+import akka.event.LoggingAdapter
+
 object SpotifyRequestActor {
   case class SpotifyRequest(uri : String)
   case class SpotifyResponse(res : JsValue)
 
-  val logger = LogManager.getLogger()
   implicit val backend = HttpURLConnectionBackend()
   val auth_api = "http://localhost:8080"
   val token_path = "/refresh"
   val token_uri = auth_api + token_path
+
+  def props : Props = Props(new SpotifyRequestActor)
   
-  def refresh_token() : String = 
+  def refresh_token(log : LoggingAdapter) : String = 
     Try(sttp.get(uri"$token_uri").send().body).map(x => x match {
       case Right(x) => Try((Json.parse(x) \ "token").as[String]).map(s => s)
       case _ => {
-        logger.error("HTTP Response code is not valid")
+        log.error("HTTP Response code is not valid")
         throw new Exception("HTTP Response code is not valid")
       }
     }).flatten match {
       case Success(s) => s
       case Failure(ex) => {
-        logger.error(s"token_uri not accessible: $token_uri")
-        logger.error("Full Exception: " + ex.toString())
+        log.error(s"token_uri not accessible: $token_uri")
+        log.error("Full Exception: " + ex.toString())
         return ""
       }
     }
 }
 
-class SpotifyRequestActor extends Actor with Logging {
+class SpotifyRequestActor extends Actor with akka.actor.ActorLogging {
   import SpotifyRequestActor._
 
-  var token : String = refresh_token()
+  var token : String = refresh_token(log)
   def receive = {
     case SpotifyRequest(uri) => {
       val formattedUri = uri"$uri"
       val ret = Try(sttp.auth.bearer(token).get(formattedUri).send()).flatMap({
         case Response(_, 401, _, _, _) => {
-          token = refresh_token()
+          token = refresh_token(log)
           Try(sttp.auth.bearer(token).get(formattedUri).send()).flatMap(x => x match {
             case Response(Right(x), _, _, _, _) => Try(x)
             case _ => throw new Exception("After retry, we still fail.")
