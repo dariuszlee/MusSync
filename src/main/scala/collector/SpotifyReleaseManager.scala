@@ -1,6 +1,5 @@
 import SpotifyRequestActor._
 
-import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
 
@@ -32,7 +31,7 @@ object SpotifyFollowRecursive {
 
 class SpotifyFollowRecursive extends Actor with akka.actor.ActorLogging {
   import SpotifyFollowRecursive._
-  val reqActor = context.actorOf(SpotifyRequestActor.props, "request_actor")
+  val reqActor = context.actorSelection("/user/request-actors")
 
   import context.dispatcher
   implicit val timeout : Timeout = 3 seconds
@@ -58,7 +57,10 @@ class SpotifyFollowRecursive extends Actor with akka.actor.ActorLogging {
             }
           }
         }
-        case Failure(x) => log.error("Requiring uri {} failed.", uri)
+        case Failure(x) => {
+          log.error("Requiring uri {} failed.", uri)
+          self ! GetFollowers(uri)
+        }
       })
     }
   }
@@ -69,6 +71,8 @@ object SpotifyReleaseManager extends App {
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
+
+  val requestActors = system.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "request-actors")
 
   val userFollows = system.actorOf(props, "spotifyFollow")
   userFollows ! GetFollowers(SpotifyFollowRecursive.getFollowersUri)

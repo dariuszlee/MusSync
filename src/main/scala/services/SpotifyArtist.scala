@@ -1,19 +1,44 @@
+import akka.pattern.ask
+import scala.concurrent.duration._
+import akka.util.Timeout
+import scala.util.Success
+import scala.util.Failure
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 
+import play.api.libs.json.JsValue
+
 object SpotifyArtist {
   def props : Props = Props(new SpotifyArtist())
+  def AlbumsUri(id : String, limit : Int) : String = s"https://api.spotify.com/v1/artists/$id/albums?limit=$limit"
 
   case class GetLatest(artistId : String)
 }
 
 class SpotifyArtist extends Actor with ActorLogging {
   import SpotifyArtist._
+  import SpotifyRequestActor.SpotifyResponse
+  val reqActor = context.actorSelection("/user/request-actors")
+  implicit val timeout : Timeout = 10 seconds
+  import context.dispatcher
 
   def receive = {
     case GetLatest(id) => {
-      log.debug("Artist Id: {}", id)
+      val albumUri = SpotifyArtist.AlbumsUri(id, 1)
+      ask(reqActor, SpotifyRequestActor.SpotifyRequest(albumUri)) onComplete({
+        case Success(SpotifyResponse(latest)) => {
+          val albName = ((latest \ "items")(0) \ "name" ).as[JsValue]
+          val artName = (((latest \ "items")(0) \ "artists")(0) \ "name").as[JsValue]
+          log.debug("Success: Album name: {} by author: {}", albName, artName)
+        }
+        case Failure(x) => {
+          log.error("Aquiring uri {} failed.", albumUri)
+          log.error("Error is: {}", x)
+          self ! GetLatest(id)
+        }
+      })
     }
   }
 }
