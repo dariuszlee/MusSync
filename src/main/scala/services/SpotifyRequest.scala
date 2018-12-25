@@ -1,3 +1,6 @@
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+
 import scala.util.Success
 import scala.util.Failure
 
@@ -8,10 +11,12 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.Actor
 import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.actor.ActorSystem
 
 import play.api.libs.json.Json
 import play.api.libs.json.JsValue
+import play.api.libs.json.JsDefined
 
 import akka.event.LoggingAdapter
 
@@ -25,65 +30,66 @@ object SpotifyRequestActor {
   case class SpotifyResponse(res : JsValue)
 
   val auth_api = "http://localhost:8080"
-  val token_path = "/refresh"
+  val token_path = "/session"
   val token_uri = auth_api + token_path
 
   def props(materializer: ActorMaterializer) : Props = Props(new SpotifyRequestActor()(materializer))
   
-  // def refresh_token(log : LoggingAdapter) : String = 
-  //   Try(sttp.get(uri"$token_uri").send().body).map(x => x match {
-  //     case Right(x) => Try((Json.parse(x) \ "token").as[String]).map(s => s)
-  //     case _ => {
-  //       log.error("HTTP Response code is not valid")
-  //       throw new Exception("HTTP Response code is not valid")
-  //     }
-  //   }).flatten match {
-  //     case Success(s) => s
-  //     case Failure(ex) => {
-  //       log.error(s"token_uri not accessible: $token_uri")
-  //       log.error("Full Exception: " + ex.toString())
-  //       return ""
-  //     }
-  //   }
-  def refresh_token(log : LoggingAdapter) : String = {
-    return ""
+  def refresh_token(log : LoggingAdapter)(implicit mat: Materializer, context: ExecutionContext, system: ActorSystem) : Future[String] = {
+    AkkaHttpUtils.request_json(token_uri).map(x => {
+        (x \ "token").as[String]
+      }
+    )
   }
 }
 
 class SpotifyRequestActor()(implicit mat: ActorMaterializer) extends Actor with akka.actor.ActorLogging {
   import SpotifyRequestActor._
+  import TokenActor._
   import context._
 
-  var token : String = refresh_token(log)
+  implicit val timeout : akka.util.Timeout = 5 second
+  val authActor = context.actorSelection("/user/auth_actor")
   def receive = {
     case SpotifyRequest(uri) => {
-      AkkaHttpUtils.request_oauth(uri, token).onComplete({
-        case Success(res: String) => {
-          sender() ! SpotifyResponse(Json.parse(res))
+      val responseActor = sender()
+      ask(authActor, GetToken).onComplete({
+        case Success(SessionToken(token)) => {
+          AkkaHttpUtils.request_oauth_raw(uri, token).onComplete({
+            case Success((StatusCodes.Unauthorized, _)) => {
+              authActor ! RefreshToken
+              self ! SpotifyRequest(uri)
+            }
+            case Success((StatusCodes.Success(_), data: Future[String])) => {
+              data.onComplete({
+                case Success(dataString) => responseActor ! SpotifyResponse(Json.parse(dataString))
+              })
+            }
+            case Failure(_) => sys.error("something wrong")
+          })
         }
-        case Failure(_)   => sys.error("something wrong")
       })
     }
   }
 }
 
 object SpotifyRequestTest extends App {
-  import SpotifyAuthentication._
+  import TokenActor._
   val testUri = "https://api.spotify.com/v1/artists/6rvxjnXZ3KPlIPZ8IP7wIT/albums?limit=1"
 
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
+  implicit val timeout : akka.util.Timeout = 5 second
 
-  implicit val timeout : Timeout = 5 second
-
-  val authActor = system.actorOf(TokenActor.props, "authActor")
+  val authActor = system.actorOf(TokenActor.props, "auth_actor")
   val reqActor = system.actorOf(SpotifyRequestActor.props(materializer), "spotify_requester")
-  // ask(reqActor, SpotifyRequestActor.SpotifyRequest(testUri)) onComplete({
-  //   case Success(x) => println(x)
-  //   case Failure(x) => println(x)
-  // })
-  reqActor ! SpotifyRequestActor.SpotifyRequest("https://api.spotify.com/v1/artists/6rvxjnXZ3KPlIPZ8IP7wIT/albums?limit=1")
+
+  ask(reqActor, SpotifyRequestActor.SpotifyRequest(testUri)) onComplete({
+    case Success(x) => println(x)
+    case Failure(x) => println(x)
+  })
+  // reqActor ! SpotifyRequestActor.SpotifyRequest("https://api.spotify.com/v1/artists/6rvxjnXZ3KPlIPZ8IP7wIT/albums?limit=1")
 
   readLine()
   system.terminate()

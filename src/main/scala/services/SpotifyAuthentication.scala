@@ -1,4 +1,3 @@
-import scala.concurrent.Future
 import scala.util.Success
 import scala.util.Failure
 
@@ -13,6 +12,7 @@ import akka.persistence.SnapshotOffer
 
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 
 import akka.actor.Actor
@@ -25,6 +25,12 @@ import scala.concurrent.duration._
 
 import play.api.libs.json.Json
 import play.api.libs.json.JsValue
+import play.api.libs.json.JsDefined
+
+import java.net.URLEncoder
+// import akka.http.scaladsl.model.ContentType
+import akka.util.ByteString
+import akka.stream.scaladsl.Source
 
 object SessionActor {
   case class SessionData(token : String, refreshToken : String)
@@ -68,27 +74,29 @@ object TokenActor {
   case class AuthCode(code : String)
   case object RefreshToken
   case object GetToken
-  def props: Props = Props(new TokenActor())
+  case class SessionToken(token: String)
+  def props(implicit mat: Materializer): Props = Props(new TokenActor())
 }
 
-class TokenActor extends Actor {
+class TokenActor(implicit mat: Materializer) extends Actor {
   import TokenActor._
   import SessionActor._
   import context.dispatcher
+  import context.system
+  implicit val timeout : Timeout = 1 second
 
   val client_id = "40b76927fb1a4841b2114bcda79e829a"
   val client_secret = "7eb1825fb44845b8bd463f9e883fa9a9"
-  val callback = "http://localhost:8080/callback"
+  val callback = URLEncoder.encode("http://localhost:8080/callback")
 
   val sessionActor = context.actorOf(SessionActor.props, "sessionActor")
 
   val log = Logging(context.system, this)
-  implicit val timeout : Timeout = 1 second
   def receive = {
     case AuthCode(s) => 
     {
-      // val tokenUri = uri"https://accounts.spotify.com/api/token"
-      // val map : Map[String, String] = Map("grant_type" -> "authorization_code", "code" -> s, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
+      val tokenUri = "https://accounts.spotify.com/api/token"
+      val map : Map[String, String] = Map("grant_type" -> "authorization_code", "code" -> s, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
       // val request = sttp.body(map).post(tokenUri)
       // val response = request.send()
       // val data : JsValue = response.body match {
@@ -99,29 +107,38 @@ class TokenActor extends Actor {
     }
     case RefreshToken =>
     {
-      // val future = ask(sessionActor, SessionRequest)
-      // val toSendBack = sender()
-      // val data = future onComplete {
-      //   case Success(s : SessionData) => {
-      //     val tokenUri = uri"https://accounts.spotify.com/api/token"
-      //     val map : Map[String, String] = Map("grant_type" -> "refresh_token", "refresh_token" -> s.refreshToken, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
-      //     val request = sttp.body(map).post(tokenUri)
-      //     val response = request.send()
-      //     val data : String = response.body match {
-      //       case Right(x) => (Json.parse(x) \ "access_token").as[String] 
-      //       case _ => throw new Exception("Refresh failed")
-      //     }
-      //     println("Refreshed Token: " + data)
-      //     sessionActor ! RefreshData(data)
-      //     toSendBack ! AuthCode(data)
-      //   }
-      //   case s : Any => {
-      //     println(s)
-      //   }
-      // }
+      ask(sessionActor, SessionRequest).onComplete {
+        case Success(s : SessionData) => {
+          val tokenUri = "https://accounts.spotify.com/api/token"
+          val map : Map[String, String] = Map("grant_type" -> "refresh_token", "refresh_token" -> s.refreshToken, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
+          val refreshToken = s.refreshToken
+          var body = s"grant_type=refresh_token&refresh_token=$refreshToken&redirect_uri=$callback&client_id=$client_id&client_secret=$client_secret"
+          var bodyBytes = ByteString.fromString(body)
+          AkkaHttpUtils.post(tokenUri, bodyBytes).onComplete({
+            case Success(x) => {
+              log.info("Refresh: {}", x)
+              x \ "access_token" match {
+                case JsDefined(x) => {
+                  sessionActor ! RefreshData(x.as[String])
+                }
+                case _ => log.error("Unable to parse 'access_token' from response.")
+              }
+            }
+          })
+        }
+        case _ => log.info("Failed to refresh token....")
+      }
     }
     case GetToken => {
-
+      val senderActor = sender()
+      ask(sessionActor, SessionRequest).onComplete({
+        case Success(value : SessionData) => { 
+          senderActor ! SessionToken(value.token)
+        }
+        case _ => {
+          log.error("Failed to get Session Data")
+        }
+      })
     }
     case _ => throw new Exception("Not valid")
   }
@@ -130,7 +147,7 @@ class TokenActor extends Actor {
 object SpotifyAuthentication extends App {
   import TokenActor.AuthCode
   import TokenActor.RefreshToken
-  import SessionActor.SessionRequest
+  import TokenActor.GetToken
   import SessionActor.SessionData
 
   implicit val system = ActorSystem()
@@ -139,13 +156,12 @@ object SpotifyAuthentication extends App {
 
   implicit val timeout : Timeout = 5 second
 
-  val dbActor = system.actorOf(Props[SessionActor], "storeToken")
   val tokenActor = system.actorOf(TokenActor.props, "getToken")
 
   val route = {
     path("session") {
       get {
-        onComplete(ask(dbActor, SessionRequest)) {
+        onComplete(ask(tokenActor, GetToken)) {
           case Success(value : SessionData) => { 
             println(value)
             complete(Json.toJson(Map("token" -> value.token, "refresh" -> value.refreshToken)).toString())
@@ -162,13 +178,18 @@ object SpotifyAuthentication extends App {
     } ~
     path("refresh") {
       get {
-        onComplete(ask(tokenActor, RefreshToken)) {
-          case Success(s : AuthCode) => {
-            complete(HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, 
-              Json.toJson(Map("token" -> s.code)).toString())))
+        tokenActor ! RefreshToken
+        onComplete(ask(tokenActor, GetToken)) {
+          case Success(value : SessionData) => { 
+            println(value)
+            complete(Json.toJson(Map("token" -> value.token, "refresh" -> value.refreshToken)).toString())
           }
-          case _ => {
-            complete(StatusCode.int2StatusCode(500))
+          case Success(value) => { 
+            complete("Successfully but with no value")
+          }
+          case Failure(ex)    => {
+            println(ex)
+            complete("Failure")
           }
         }
       }
