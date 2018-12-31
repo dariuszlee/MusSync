@@ -45,16 +45,16 @@ object AkkaHttpUtils {
     get_response(request)
   }
 
-  def request_oauth_raw(uri: String, token: String)(implicit materializer: Materializer, context: ExecutionContext, system: ActorSystem) 
-    : Future[Tuple2[StatusCode, Future[String]]] = {
+  def request_oauth_raw(uri: String, token: String, request_num: Int)(implicit materializer: Materializer, context: ExecutionContext, system: ActorSystem) 
+   : Future[Tuple5[StatusCode, Seq[HttpHeader], Future[String], HttpProtocol, Int]] = {
     val request = HttpRequest(uri = uri).addCredentials(new OAuth2BearerToken(token))
-    get_response_raw(request)
+    get_response_raw(request, request_num)
   }
 
-  def get_response_raw(req: HttpRequest)(implicit materializer: Materializer, context: ExecutionContext, system: ActorSystem)
- : Future[Tuple2[StatusCode, Future[String]]] = {
+  def get_response_raw(req: HttpRequest, request_num: Int)(implicit materializer: Materializer, context: ExecutionContext, system: ActorSystem)
+ : Future[Tuple5[StatusCode, Seq[HttpHeader], Future[String], HttpProtocol, Int]] = {
     Http().singleRequest(req).flatMap(x => {
-      Future((x.status, x.entity.dataBytes.map(x => x.utf8String).runFold("")(_ ++ _)))
+      Future((x.status, x.headers, x.entity.dataBytes.map(x => x.utf8String).runFold("")(_ ++ _), x.protocol, request_num))
     })
   }
 
@@ -77,7 +77,7 @@ object AkkHttpUtilsApp extends App {
   implicit val executionContext = system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  AkkaHttpUtils.request_oauth_raw(testUri, "asdf") onComplete {
+  AkkaHttpUtils.request_oauth_raw(testUri, "asdf", 0) onComplete {
     case Success(x) => println(x)
     case Failure(x) => println(x)
   }

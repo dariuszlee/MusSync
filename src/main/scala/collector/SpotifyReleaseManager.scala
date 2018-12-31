@@ -1,4 +1,5 @@
 import SpotifyRequestActor._
+import akka.pattern.pipe
 
 import scala.util.Success
 import scala.util.Failure
@@ -24,7 +25,7 @@ import play.api.libs.json.JsDefined
 
 object SpotifyFollowRecursive {
   def props : Props = Props(new SpotifyFollowRecursive())
-  val getFollowersUri : String = "https://api.spotify.com/v1/me/following?type=artist"
+  val getFollowersUri : String = "https://api.spotify.com/v1/me/following?type=artist&limit=20"
 
   case class GetFollowers(uri : String)
 }
@@ -38,30 +39,27 @@ class SpotifyFollowRecursive extends Actor with akka.actor.ActorLogging {
 
   def receive = {
     case GetFollowers(uri) => {
-      ask(reqActor, SpotifyRequestActor.SpotifyRequest(uri)) onComplete({
-        case Success(SpotifyResponse(y)) => {
-          (y \ "artists" \ "next").as[JsValue] match {
-            case JsString(nextUri) => {
-              val actorId = (y \ "artists" \  "cursors" \ "after").as[String]
-              val nextActor = context.actorOf(props, s"get-next-$actorId")
-              nextActor ! GetFollowers(nextUri)
-            }
-            case JsNull => log.info("Finished: There is no next value.")
-          }
-          (y \ "artists" \ "items").as[JsValue] match {
-            case JsArray(artists) => {
-              val artistActor = context.actorOf(SpotifyArtist.props, "artist-actor")
-              artists.foreach(artist => {
-                artistActor ! SpotifyArtist.GetLatest((artist \ "id").as[String])
-              })
-            }
-          }
+      ask(reqActor, SpotifyRequestActor.SpotifyRequest(uri)).map(x => {
+        x
+      }).pipeTo(self)
+    }
+    case SpotifyResponse(y) => {
+      (y \ "artists" \ "next").as[JsValue] match {
+        case JsString(nextUri) => {
+          val actorId = (y \ "artists" \  "cursors" \ "after").as[String]
+          val nextActor = context.actorOf(props, s"get-next-$actorId")
+          nextActor ! GetFollowers(nextUri)
         }
-        case Failure(x) => {
-          log.error("Requiring uri {} failed.", uri)
-          self ! GetFollowers(uri)
+        case JsNull => log.info("Finished: There is no next value.")
+      }
+      (y \ "artists" \ "items").as[JsValue] match {
+        case JsArray(artists) => {
+          val artistActor = context.actorOf(SpotifyArtist.props, "artist-actor")
+          artists.foreach(artist => {
+            artistActor ! SpotifyArtist.GetLatest((artist \ "id").as[String])
+          })
         }
-      })
+      }
     }
   }
 }
@@ -72,7 +70,9 @@ object SpotifyReleaseManager extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  val requestActors = system.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "request-actors")
+  val authActor = system.actorOf(TokenActor.props, "auth_actor")
+  // val requestActors = system.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "request-actors")
+  val requestActors = system.actorOf(SpotifyRequestActor.props, "request-actors")
 
   val userFollows = system.actorOf(props, "spotifyFollow")
   userFollows ! GetFollowers(SpotifyFollowRecursive.getFollowersUri)

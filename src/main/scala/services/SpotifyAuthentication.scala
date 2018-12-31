@@ -97,13 +97,6 @@ class TokenActor(implicit mat: Materializer) extends Actor {
     {
       val tokenUri = "https://accounts.spotify.com/api/token"
       val map : Map[String, String] = Map("grant_type" -> "authorization_code", "code" -> s, "redirect_uri" -> callback, "client_id" -> client_id, "client_secret" -> client_secret)
-      // val request = sttp.body(map).post(tokenUri)
-      // val response = request.send()
-      // val data : JsValue = response.body match {
-      //   case Left(x) => Json.parse(x)
-      //   case Right(x) => Json.parse(x)
-      // }
-      // sessionActor ! SessionData((data \ "access_token").as[String], (data \ "refresh_token").as[String])
     }
     case RefreshToken =>
     {

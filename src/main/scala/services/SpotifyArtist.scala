@@ -1,3 +1,4 @@
+import akka.pattern.pipe
 import akka.pattern.ask
 import scala.concurrent.duration._
 import akka.util.Timeout
@@ -27,18 +28,12 @@ class SpotifyArtist extends Actor with ActorLogging {
   def receive = {
     case GetLatest(id) => {
       val albumUri = SpotifyArtist.AlbumsUri(id, 1)
-      ask(reqActor, SpotifyRequestActor.SpotifyRequest(albumUri)) onComplete({
-        case Success(SpotifyResponse(latest)) => {
-          val albName = ((latest \ "items")(0) \ "name" ).as[JsValue]
-          val artName = (((latest \ "items")(0) \ "artists")(0) \ "name").as[JsValue]
-          log.debug("Success: Album name: {} by author: {}", albName, artName)
-        }
-        case Failure(x) => {
-          log.error("Aquiring uri {} failed.", albumUri)
-          log.error("Error is: {}", x)
-          self ! GetLatest(id)
-        }
-      })
+      ask(reqActor, SpotifyRequestActor.SpotifyRequest(albumUri)).pipeTo(self)
+    }
+    case SpotifyResponse(latest) => {
+      val albName = ((latest \ "items")(0) \ "name" ).as[JsValue]
+      val artName = (((latest \ "items")(0) \ "artists")(0) \ "name").as[JsValue]
+      log.info("Success: Album name: {} by author: {}", albName, artName)
     }
   }
 }
