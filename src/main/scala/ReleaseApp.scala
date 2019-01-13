@@ -42,19 +42,16 @@ class ReleaseActor extends Actor with akka.actor.ActorLogging {
       get_artists_actor ! HandleArtistUrl(initial_url)
     }
     case AddUrl(uri: String) => {
-      completed.add(uri, false)
+      completed.put(uri, false)
     }
     case CheckJob => {
       log.info("Checking if job is completed. {}", completed)
     }
-    case FinishedUrl(url, next) => {
+    case FinishedUrl(url) => {
       completed.put(url, true)
-      next match {
-        case Some(x) => log.info("Starting next")
-        case None => self ! CheckJob
-      }
     }
   }
+
 }
 
 object ReleaseApp extends App {

@@ -46,17 +46,15 @@ object AkkaHttpUtils {
   }
 
   def request_oauth_raw(uri: String, token: String, request_num: Int)(implicit materializer: Materializer, context: ExecutionContext, system: ActorSystem) 
-   : Future[Tuple5[StatusCode, Seq[HttpHeader], Future[String], HttpProtocol, Int]] = {
+   : Future[HttpResponse] = {
     val request = HttpRequest(uri = uri).addCredentials(new OAuth2BearerToken(token))
     get_response_raw(request, request_num)
   }
 
   def get_response_raw(req: HttpRequest, request_num: Int)(implicit materializer: Materializer, context: ExecutionContext, system: ActorSystem)
- : Future[Tuple5[StatusCode, Seq[HttpHeader], Future[String], HttpProtocol, Int]] = {
-    Http().singleRequest(req).flatMap(x => {
-      Future((x.status, x.headers, x.entity.dataBytes.map(x => x.utf8String).runFold("")(_ ++ _), x.protocol, request_num))
-    })
-  }
+ : Future[HttpResponse] = {
+    Http().singleRequest(req)  
+ }
 
   def get_response(req: HttpRequest)(implicit materializer: Materializer, context: ExecutionContext, system: ActorSystem)
  : Future[String] = {

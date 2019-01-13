@@ -22,13 +22,14 @@ import akka.event.Logging
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
 
 import play.api.libs.json.Json
 import play.api.libs.json.JsValue
 import play.api.libs.json.JsDefined
 
 import java.net.URLEncoder
-// import akka.http.scaladsl.model.ContentType
 import akka.util.ByteString
 import akka.stream.scaladsl.Source
 
@@ -38,6 +39,7 @@ object SessionActor {
   case object SessionRequest
 
   def props : Props = Props(new SessionActor())
+
 }
 
 class SessionActor extends PersistentActor {
@@ -69,6 +71,26 @@ class SessionActor extends PersistentActor {
     }
   }
 }
+
+class SpotifyTokenUtils(implicit mat: Materializer, ex: ExecutionContext,
+                        actor_sys: ActorSystem){
+  val client_id = "40b76927fb1a4841b2114bcda79e829a"
+  val client_secret = "7eb1825fb44845b8bd463f9e883fa9a9"
+  val callback = URLEncoder.encode("http://localhost:8080/callback")
+  val tokenUri = "https://accounts.spotify.com/api/token"
+  val refreshToken = "AQBjrJOtmyOFde6P9qCH_YiSTtURDZErXB-hjzoIv-sn6a7klmF3Kn3DvNGrNM5W91P2moun8QmYEE77jRToBt4OpiePetlb58yiGZRzbZqsz3uqs04P9ljfuXMrcwqrZ2XV7w"
+
+  val timeout = 1 second
+
+  def refresh_token() : String = {
+    var body = s"grant_type=refresh_token&refresh_token=$refreshToken&redirect_uri=$callback&client_id=$client_id&client_secret=$client_secret"
+    var bodyBytes = ByteString.fromString(body)
+
+    val req = AkkaHttpUtils.post(tokenUri, bodyBytes)
+    val res = Await.result(req, timeout)
+    return (res \ "access_token").as[String]
+  }
+}
  
 object TokenActor {
   case class AuthCode(code : String)
@@ -76,6 +98,7 @@ object TokenActor {
   case object GetToken
   case class SessionToken(token: String)
   def props(implicit mat: Materializer): Props = Props(new TokenActor())
+
 }
 
 class TokenActor(implicit mat: Materializer) extends Actor {
@@ -137,6 +160,18 @@ class TokenActor(implicit mat: Materializer) extends Actor {
   }
 }
 
+object SpotifyTokenTest extends App {
+  implicit val context = ActorSystem()
+  implicit val materializer = ActorMaterializer()
+  implicit val executionContext = context.dispatcher
+
+  val token_obj = new SpotifyTokenUtils()  
+  println("Token: ", token_obj.refresh_token())
+
+  readLine()
+  context.terminate()
+}
+
 object SpotifyAuthentication extends App {
   import TokenActor.AuthCode
   import TokenActor.RefreshToken
@@ -156,6 +191,7 @@ object SpotifyAuthentication extends App {
       get {
         onComplete(ask(tokenActor, GetToken)) {
           case Success(value : SessionData) => { 
+
             println(value)
             complete(Json.toJson(Map("token" -> value.token, "refresh" -> value.refreshToken)).toString())
           }
