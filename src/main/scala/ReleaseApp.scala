@@ -24,8 +24,11 @@ object ReleaseActor {
 class ReleaseActor extends Actor with akka.actor.ActorLogging {
   import ReleaseActor._
   import ArtistActor._
+  import context._
 
+  implicit var mat = ActorMaterializer()(context.system)
   var completed : HashMap[String, Boolean] = new HashMap[String, Boolean]()
+  var request_actor = context.actorOf(SpotifyRequestActor.props, "req_actor_root")
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
