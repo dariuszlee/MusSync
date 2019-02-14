@@ -35,14 +35,21 @@ class ReleaseActor extends Actor with akka.actor.ActorLogging {
       }
     }
 
+  import java.security.MessageDigest
+  def hash(to_hash : String) = {
+    MessageDigest.getInstance("MD5").digest(to_hash.getBytes)
+  }
+
   override def receive = {
     case StartJob => {
-      val get_artists_actor = context.actorOf(ArtistActor.props, "artist_actor")
-      completed.put(initial_url, false)
-      get_artists_actor ! HandleArtistUrl(initial_url)
+      self ! AddUrl(initial_url)
     }
     case AddUrl(uri: String) => {
+      val uri_hash = "artist_act_" + BigInt(hash(uri))
+      log.info("URI {}", uri_hash)
+      val get_artists_actor = context.actorOf(ArtistActor.props, uri_hash)
       completed.put(uri, false)
+      get_artists_actor ! HandleArtistUrl(uri)
     }
     case CheckJob => {
       log.info("Checking if job is completed. {}", completed)
@@ -51,7 +58,6 @@ class ReleaseActor extends Actor with akka.actor.ActorLogging {
       completed.put(url, true)
     }
   }
-
 }
 
 object ReleaseApp extends App {
@@ -59,6 +65,7 @@ object ReleaseApp extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = context.dispatcher
 
+  val spotify_req = context.actorOf(SpotifyRequestActor.props, "req_actor")
   val release_app = context.actorOf(ReleaseActor.props, "release-actor")
   release_app ! ReleaseActor.StartJob
 
