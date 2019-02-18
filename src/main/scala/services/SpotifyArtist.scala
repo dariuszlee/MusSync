@@ -27,8 +27,8 @@ class SpotifyArtist extends Actor with ActorLogging {
 
   def receive = {
     case GetLatest(id) => {
-      val albumUri = SpotifyArtist.AlbumsUri(id, 1)
-      ask(reqActor, SpotifyRequestActor.SpotifyRequest(albumUri)).pipeTo(self)
+      // val albumUri = SpotifyArtist.AlbumsUri(id, 1)
+      // ask(reqActor, SpotifyRequestActor.SpotifyRequest(albumUri)).pipeTo(self)
     }
     case SpotifyResponse(latest) => {
       val albName = ((latest \ "items")(0) \ "name" ).as[JsValue]

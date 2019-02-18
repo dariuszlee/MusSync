@@ -52,7 +52,7 @@ class ReleaseActor extends Actor with akka.actor.ActorLogging {
       log.info("URI {}", uri_hash)
       val get_artists_actor = context.actorOf(ArtistActor.props, uri_hash)
       completed.put(uri, false)
-      get_artists_actor ! HandleArtistUrl(uri)
+      get_artists_actor ! HandleJobStart(uri)
     }
     case CheckJob => {
       log.info("Checking if job is completed. {}", completed)
@@ -71,6 +71,8 @@ object ReleaseApp extends App {
   val spotify_req = context.actorOf(SpotifyRequestActor.props, "req_actor")
   val release_app = context.actorOf(ReleaseActor.props, "release-actor")
   release_app ! ReleaseActor.StartJob
+
+  // context.scheduler.schedule(100 milliseconds, 100 milliseconds, release_app, ReleaseActor.CheckJob)
 
   readLine()
   context.terminate()

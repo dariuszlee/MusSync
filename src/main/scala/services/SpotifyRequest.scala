@@ -28,13 +28,10 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 
 object SpotifyRequestActor {
-  case class SpotifyRequest(uri : String)
-  case class SpotifyRequestWithToken(token: String, uri: String, responseTo: ActorRef)
-  // case class SpotifyReplyTo(toReply: ActorRef, )
+  case class SpotifyRequest(uri : String, respond_with : SpotifyResponse => Object)
   case class SpotifyResponse(res : JsValue)
-  // case class SpotifySuccessfulResponse(res : JsValue)
 
-  case class SpotifyRawRequest(uri : String, respond_to : ActorRef)
+  case class SpotifyRawRequest(uri : String, respond_to : ActorRef, respond_with : SpotifyResponse => Object)
   case class SpotifyRawResponse(res : HttpResponse, req_details : SpotifyRawRequest)
 
   case object SuccessfulRequest
@@ -67,20 +64,23 @@ class SpotifyRequestActor()(implicit mat: ActorMaterializer) extends Actor with 
   // var token = spotify_token_utils.refresh_token()
   var token = "aaaa"
   def receive = {
-    case SpotifyRequest(uri) => {
-      self ! SpotifyRawRequest(uri, sender())
+    case SpotifyRequest(uri, respond_with) => {
+      self ! SpotifyRawRequest(uri, sender(), respond_with)
     }
-    case SpotifyRawRequest(uri, respond_to) => {
-      AkkaHttpUtils.request_oauth_raw(uri, token, request_num).map(x => SpotifyRawResponse(x, SpotifyRawRequest(uri, respond_to))).pipeTo(self)
+    case SpotifyRawRequest(uri, respond_to, respond_with) => {
+      AkkaHttpUtils.request_oauth_raw(uri, token, request_num).map(x => SpotifyRawResponse(x, SpotifyRawRequest(uri, respond_to, respond_with))).pipeTo(self)
     }
     case SpotifyRawResponse(HttpResponse(StatusCodes.Unauthorized, headers, entity, _), req_details) => {
       token = spotify_token_utils.refresh_token()
       self ! req_details
     }
-    case SpotifyRawResponse(HttpResponse(StatusCodes.TooManyRequests, headers, entity, _), sender) => {
+    case SpotifyRawResponse(HttpResponse(StatusCodes.TooManyRequests, headers, entity, _), req_details) => {
+      self ! req_details
     }
     case SpotifyRawResponse(HttpResponse(StatusCodes.Success(_), headers, entity, _), req_det) => {
-      entity.dataBytes.runFold[String]("")(_ + _.utf8String).map(x => SpotifyResponse(Json.parse(x))).pipeTo(req_det.respond_to)
+      entity.dataBytes.runFold[String]("")(_ + _.utf8String).map({
+        x => req_det.respond_with(SpotifyResponse(Json.parse(x)))
+      }).pipeTo(req_det.respond_to)
     }
     case SpotifyRawResponse(x, s) => println("Unmatched: ", x)
   }
@@ -88,6 +88,7 @@ class SpotifyRequestActor()(implicit mat: ActorMaterializer) extends Actor with 
 
 object SpotifyRequestTest extends App {
   import TokenActor._
+
   val testUri = "https://api.spotify.com/v1/artists/6rvxjnXZ3KPlIPZ8IP7wIT/albums?limit=1"
 
   implicit val system = ActorSystem()
@@ -97,7 +98,9 @@ object SpotifyRequestTest extends App {
 
   val reqActor = system.actorOf(SpotifyRequestActor.props(materializer), "spotify_requester")
 
-  ask(reqActor, SpotifyRequestActor.SpotifyRequest(testUri)) onComplete({
+  case class TestResponse(x: SpotifyRequestActor.SpotifyResponse)
+
+  ask(reqActor, SpotifyRequestActor.SpotifyRequest(testUri, r => TestResponse(r))) onComplete({
     case Success(x) => println(x)
     case Failure(x) => println(x)
   })
