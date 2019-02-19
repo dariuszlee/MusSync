@@ -30,7 +30,7 @@ class SpotifyArtist extends Actor with ActorLogging {
       // val albumUri = SpotifyArtist.AlbumsUri(id, 1)
       // ask(reqActor, SpotifyRequestActor.SpotifyRequest(albumUri)).pipeTo(self)
     }
-    case SpotifyResponse(latest) => {
+    case SpotifyResponse(latest, _) => {
       val albName = ((latest \ "items")(0) \ "name" ).as[JsValue]
       val artName = (((latest \ "items")(0) \ "artists")(0) \ "name").as[JsValue]
       log.info("Success: Album name: {} by author: {}", albName, artName)

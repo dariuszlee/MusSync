@@ -27,7 +27,8 @@ class ReleaseActor extends Actor with akka.actor.ActorLogging {
   import context._
 
   implicit var mat = ActorMaterializer()(context.system)
-  var completed : HashMap[String, Boolean] = new HashMap[String, Boolean]()
+  var completed : Set[String] = Set[String]()
+  var completed_actors : HashMap[String, ActorRef] = new HashMap[String, ActorRef]()
   var request_actor = context.actorOf(SpotifyRequestActor.props, "req_actor_root")
 
   override val supervisorStrategy =
@@ -51,14 +52,18 @@ class ReleaseActor extends Actor with akka.actor.ActorLogging {
       val uri_hash = "artist_act_" + BigInt(hash(uri))
       log.info("URI {}", uri_hash)
       val get_artists_actor = context.actorOf(ArtistActor.props, uri_hash)
-      completed.put(uri, false)
+      completed = completed + uri
+      completed_actors.put(uri, get_artists_actor)
       get_artists_actor ! HandleJobStart(uri)
     }
     case CheckJob => {
-      log.info("Checking if job is completed. {}", completed)
+      completed.foreach(x => {
+        completed_actors(x) ! ArtistActor.CheckStatus
+      })
     }
     case FinishedUrl(url) => {
-      completed.put(url, true)
+      completed = completed - url
+      completed_actors.remove(url)
     }
   }
 }
@@ -72,7 +77,7 @@ object ReleaseApp extends App {
   val release_app = context.actorOf(ReleaseActor.props, "release-actor")
   release_app ! ReleaseActor.StartJob
 
-  // context.scheduler.schedule(100 milliseconds, 100 milliseconds, release_app, ReleaseActor.CheckJob)
+  context.scheduler.schedule(3000 milliseconds, 3000 milliseconds, release_app, ReleaseActor.CheckJob)
 
   readLine()
   context.terminate()

@@ -43,7 +43,7 @@ class SpotifyFollowRecursive extends Actor with akka.actor.ActorLogging {
       //   x
       // }).pipeTo(self)
     }
-    case SpotifyResponse(y) => {
+    case SpotifyResponse(y, _) => {
       (y \ "artists" \ "next").as[JsValue] match {
         case JsString(nextUri) => {
           val actorId = (y \ "artists" \  "cursors" \ "after").as[String]

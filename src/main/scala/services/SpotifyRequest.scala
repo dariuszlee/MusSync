@@ -29,7 +29,7 @@ import akka.http.scaladsl.model.headers._
 
 object SpotifyRequestActor {
   case class SpotifyRequest(uri : String, respond_with : SpotifyResponse => Object)
-  case class SpotifyResponse(res : JsValue)
+  case class SpotifyResponse(res : JsValue, req : SpotifyRequest)
 
   case class SpotifyRawRequest(uri : String, respond_to : ActorRef, respond_with : SpotifyResponse => Object)
   case class SpotifyRawResponse(res : HttpResponse, req_details : SpotifyRawRequest)
@@ -79,7 +79,7 @@ class SpotifyRequestActor()(implicit mat: ActorMaterializer) extends Actor with 
     }
     case SpotifyRawResponse(HttpResponse(StatusCodes.Success(_), headers, entity, _), req_det) => {
       entity.dataBytes.runFold[String]("")(_ + _.utf8String).map({
-        x => req_det.respond_with(SpotifyResponse(Json.parse(x)))
+        x => req_det.respond_with(SpotifyResponse(Json.parse(x), SpotifyRequest(req_det.uri, req_det.respond_with)))
       }).pipeTo(req_det.respond_to)
     }
     case SpotifyRawResponse(x, s) => println("Unmatched: ", x)
