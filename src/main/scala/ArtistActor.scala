@@ -16,6 +16,7 @@ object ArtistActor {
   def props : Props = Props(new ArtistActor())
 
   case class HandleJobStart(url: String)
+  case class HandleJobStartInternal(url: String)
   case class HandleJobEnd(x : SpotifyResponse)
   case class HandleIndividualArtist(url: String)
   case class CompletedIndividualArtist(x : SpotifyResponse)
@@ -35,10 +36,15 @@ class ArtistActor extends Actor with akka.actor.ActorLogging {
 
   val req_actor = context.actorSelection("/user/req_actor")
 
+  var total_individual_requests = 0
+
   override def receive = {
     case HandleJobStart(url) => {
       internal_url = Some(url)
       to_respond_to = Some(sender())
+      self ! HandleJobStartInternal(url)
+    }
+    case HandleJobStartInternal(url) => {
       req_actor ! SpotifyRequest(url, HandleJobEnd)
     }
     case HandleJobEnd(SpotifyResponse(x, _)) => {
@@ -50,15 +56,16 @@ class ArtistActor extends Actor with akka.actor.ActorLogging {
         case _ => log.error("Invalid input")
       }
       for (artist <- (x \ "artists" \ "items").as[Seq[JsObject]]) {
-        val spot_url = (artist \ "href").as[String]
+        val spot_url = (artist \ "href").as[String] + "/albums"
         self ! HandleIndividualArtist(spot_url)
+        
+        total_individual_requests += 1    
       }
       completed_initial = true
     }
     case HandleIndividualArtist(url) => {
-      val album_url = url + "/albums"
-      complete_map = complete_map + album_url
-      req_actor ! SpotifyRequest(album_url, CompletedIndividualArtist)    
+      complete_map = complete_map + url 
+      req_actor ! SpotifyRequest(url, CompletedIndividualArtist)    
     }
     case CompletedIndividualArtist(SpotifyResponse(x, SpotifyRequest(url, _))) => {
       log.info("Completing url {}", url)
@@ -67,12 +74,19 @@ class ArtistActor extends Actor with akka.actor.ActorLogging {
     case CheckStatus => {
       if (completed_initial){
         if(complete_map.isEmpty){
-          log.info("COMPLETED {}", internal_url.get)
-          (to_respond_to.get) ! FinishedUrl(internal_url.get)   
+          log.debug("Completed individuals. Responding to {}", to_respond_to.get)
+          (to_respond_to.get) ! FinishedUrl(internal_url.get, total_individual_requests)   
         }
         else {
-          complete_map.foreach(x => HandleIndividualArtist(x))
+          complete_map.foreach(x => {
+            log.debug("Not completed individual: {}", x)
+            self ! HandleIndividualArtist(x)
+          })
         }
+      }
+      else {
+        log.debug("Not completed initial")
+        self ! HandleJobStartInternal(internal_url.get)
       }
     }
   }

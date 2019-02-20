@@ -16,7 +16,7 @@ object ReleaseActor {
 
   case object StartJob
   case object CheckJob
-  case class FinishedUrl(url: String)
+  case class FinishedUrl(url: String, num_indiv_art: Integer)
   case class AddUrl(url: String)
   class EndJob extends Exception
 }
@@ -30,6 +30,9 @@ class ReleaseActor extends Actor with akka.actor.ActorLogging {
   var completed : Set[String] = Set[String]()
   var completed_actors : HashMap[String, ActorRef] = new HashMap[String, ActorRef]()
   var request_actor = context.actorOf(SpotifyRequestActor.props, "req_actor_root")
+
+  var total_artists = 0
+  var num_indiv_artists = 0
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
@@ -49,21 +52,37 @@ class ReleaseActor extends Actor with akka.actor.ActorLogging {
       self ! AddUrl(initial_url)
     }
     case AddUrl(uri: String) => {
-      val uri_hash = "artist_act_" + BigInt(hash(uri))
-      log.info("URI {}", uri_hash)
-      val get_artists_actor = context.actorOf(ArtistActor.props, uri_hash)
-      completed = completed + uri
-      completed_actors.put(uri, get_artists_actor)
-      get_artists_actor ! HandleJobStart(uri)
+      if(!completed.contains(uri)){
+        val uri_hash = "artist_act_" + BigInt(hash(uri))
+        val get_artists_actor = context.actorOf(ArtistActor.props, uri_hash)
+        completed = completed + uri
+        completed_actors.put(uri, get_artists_actor)
+        get_artists_actor ! HandleJobStart(uri)
+
+        total_artists += 1
+      }
     }
     case CheckJob => {
-      completed.foreach(x => {
-        completed_actors(x) ! ArtistActor.CheckStatus
-      })
+      if(!completed_actors.isEmpty){
+        completed.foreach(x => {
+          log.debug("Sending check to: {}", x)
+          completed_actors(x) ! ArtistActor.CheckStatus
+        })
+      }
+      else {
+        log.info("Finishing Application - Stats:")
+        log.info("Total Artists: {}", total_artists)
+        log.info("Number Individual Artists: {}", num_indiv_artists)
+        context.stop(self) 
+      }
     }
-    case FinishedUrl(url) => {
+    case FinishedUrl(url, num_indiv_art) => {
+      log.debug("Finished URL: {}", url)
       completed = completed - url
+      context.stop(completed_actors(url))
       completed_actors.remove(url)
+
+      num_indiv_artists += num_indiv_art
     }
   }
 }
@@ -73,7 +92,7 @@ object ReleaseApp extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = context.dispatcher
 
-  val spotify_req = context.actorOf(SpotifyRequestActor.props, "req_actor")
+  val requestActors = system.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
   val release_app = context.actorOf(ReleaseActor.props, "release-actor")
   release_app ! ReleaseActor.StartJob
 

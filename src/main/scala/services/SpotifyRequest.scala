@@ -82,7 +82,11 @@ class SpotifyRequestActor()(implicit mat: ActorMaterializer) extends Actor with 
         x => req_det.respond_with(SpotifyResponse(Json.parse(x), SpotifyRequest(req_det.uri, req_det.respond_with)))
       }).pipeTo(req_det.respond_to)
     }
-    case SpotifyRawResponse(x, s) => println("Unmatched: ", x)
+    case SpotifyRawResponse(failed_msg, req_details) => {
+      println("Unmatched: ", failed_msg)
+      println("Request_details", req_details)
+      self ! req_details
+    }
   }
 }
 
