@@ -27,7 +27,9 @@ object ArtistActor {
   case class CheckArtistResponse(check_res: Boolean)
 
   def get_latest_artist(artists : JsValue) : String = {
-    ((artists \ "items").as[List[JsValue]].head \ "id").as[String] 
+    (artists \ "items").as[List[JsValue]] match {
+      case x :: _ => (x \ "id").as[String]
+    }
   }
 }
 
@@ -71,8 +73,9 @@ class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) e
         case _ => log.error("Invalid input")
       }
       for (artist <- (x \ "artists" \ "items").as[Seq[JsObject]]) {
-        val spot_url = (artist \ "href").as[String] + "/albums"
-        self ! HandleIndividualArtist(spot_url)
+        val artist_id = (artist \ "id").as[String]
+        val url = s"https://api.spotify.com/v1/artists/$artist_id/albums"
+        self ! HandleIndividualArtist(url)
       }
       completed_initial = true
     }
@@ -86,12 +89,7 @@ class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) e
       val newest_id = get_latest_artist(x)
       working_map = working_map - url
       completed_map = completed_map + url
-      if(dump_mode){
-        db_actor ! InsertSpotifyItem(url, newest_id, true)
-      }
-      else {
-        db_actor ! CheckIfCurrent(url, newest_id, self, CheckArtistResponse)
-      }
+      // db_actor ! CheckIfCurrent(url, newest_id, self, CheckArtistResponse)
     }
 
     case CheckArtistResponse(yes_or_no) => {

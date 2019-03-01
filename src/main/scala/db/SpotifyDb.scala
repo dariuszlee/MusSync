@@ -6,12 +6,14 @@ import akka.stream.ActorMaterializer
 
 import java.sql.DriverManager
 import java.sql.Connection
+import org.postgresql.util.PSQLException
 
 import java.sql.Timestamp
 import java.util.Calendar
 
 object SpotifyDbActor {
   case class InsertSpotifyItem(url: String, new_id: String, is_dump: Boolean)
+  case class PSQLExceptionWrapper(ex: PSQLException)
   case object GetUnique
   case class CheckIfCurrent(art_id: String, alb_id: String, from: ActorRef, respond_with: Boolean => Object)
   case class InsertArtist(mus_sync_user: String, spotify_artist_id: String)
@@ -39,7 +41,13 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
       log.info(s"Executing: $query_str")
       val prepared = connection.prepareStatement(query_str)
       prepared.setTimestamp(1, time)
-      prepared.executeUpdate()
+      try {
+        prepared.executeUpdate()
+      }
+      catch {
+        case psqlEx : PSQLException => {}
+        case _ => {}
+      }
       prepared.close()
     }
     case InsertSpotifyItem(url, new_id, is_dump) => {
