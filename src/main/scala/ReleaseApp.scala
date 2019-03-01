@@ -67,7 +67,7 @@ class ReleaseActor(is_debug: Boolean) extends Actor with akka.actor.ActorLogging
     case CheckJob => {
       if(!completed_actors.isEmpty){
         completed.foreach(x => {
-          log.debug("Sending check to: {}", x)
+          log.info("Sending check to: {}", x)
           completed_actors(x) ! ArtistActor.CheckStatus
         })
       }
@@ -79,7 +79,7 @@ class ReleaseActor(is_debug: Boolean) extends Actor with akka.actor.ActorLogging
       }
     }
     case FinishedUrl(url, num_indiv_art) => {
-      log.debug("Finished URL: {}", url)
+      log.info("Finished URL: {}", url)
       completed = completed - url
       context.stop(completed_actors(url))
       completed_actors.remove(url)

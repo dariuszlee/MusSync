@@ -26,9 +26,10 @@ object ArtistActor {
   case object CheckStatus
   case class CheckArtistResponse(check_res: Boolean)
 
-  def get_latest_artist(artists : JsValue) : String = {
+  def get_latest_artist(artists : JsValue) : Option[String] = {
     (artists \ "items").as[List[JsValue]] match {
-      case x :: _ => (x \ "id").as[String]
+      case x :: _ => Some((x \ "id").as[String])
+      case _ => None
     }
   }
 }
