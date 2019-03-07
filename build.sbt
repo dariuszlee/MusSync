@@ -10,6 +10,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.5.16"
 libraryDependencies += "com.typesafe.akka" %% "akka-http"   % "10.1.5" 
 libraryDependencies += "com.typesafe.akka" %% "akka-persistence" % "2.5.16"
 libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.5.16"
+libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.16" 
+
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.6.10"
