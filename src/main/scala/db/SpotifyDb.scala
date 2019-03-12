@@ -18,6 +18,8 @@ object SpotifyDbActor {
   case class CheckIfCurrent(art_id: String, alb_id: String, from: ActorRef, respond_with: Boolean => Object)
   case class InsertArtist(mus_sync_user: String, spotify_artist_id: String)
 
+  case object CreateDbs
+
   def props = Props(new SpotifyDbActor)
 }
 
@@ -25,7 +27,7 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
   import SpotifyDbActor._
 
   val driver : String = "org.postgresql.Driver"
-  val username = "dariuslee"
+  val username = "dzlyy"
   val url = "jdbc:postgresql:mus_sync_test"
   val spotify_artist_db_params = "mus_sync_user_id, spotify_artist_id, when_added"
   val connection : Connection = DriverManager.getConnection(url, username, "ma456tilda")
@@ -69,6 +71,13 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
       val someting = false
       respond_to ! respond_with(someting)
     }
+
+    case CreateDbs => {
+      val create_str = s"CREATE TABLE spotify_artist(mus_sync_user_id VARCHAR, spotify_artist_id VARCHAR, when_added TIMESTAMP)"
+
+      val statement = connection.createStatement()
+      val result_set = statement.executeQuery(create_str)
+    }
   }
 }
 
@@ -90,7 +99,8 @@ object SpotifyDbTests extends App {
   val dbActor = system.actorOf(Props(new SpotifyDbActor()), "spotifyDb")
   val test_actor = system.actorOf(Props(new TestActor()), "test_actor")
 
-  dbActor ! CheckIfCurrent("asdf", "asdf", test_actor, TestActor.MyCurrentCheck)
+  // dbActor ! CheckIfCurrent("asdf", "asdf", test_actor, TestActor.MyCurrentCheck)
+  dbActor ! CreateDbs
 
   readLine()
   system.terminate()

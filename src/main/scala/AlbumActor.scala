@@ -27,8 +27,9 @@ class AlbumActor(artist_id: String, respond_to: ActorRef) extends Actor with akk
     case GetAlbum(uri: String) => {
       req_actor ! SpotifyRequest(url, GetAlbumResponse)
     }
-    case GetAlbumResponse(spot_res) => {
-      FileWriter.write(spot_res.res.toString(), "./album.json")
+    case GetAlbumResponse(SpotifyResponse(res, req)) => {
+      val next = (res \ "next").as[String]
+      println(next)
     }
   }
 }
