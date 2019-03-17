@@ -1,6 +1,10 @@
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
+
+import akka.routing.SmallestMailboxPool
 
 import play.api.libs.json.JsString
 import play.api.libs.json.JsValue
@@ -25,6 +29,7 @@ object ArtistActor {
   case class CompletedIndividualArtist(x : SpotifyResponse)
   case object CheckStatus
   case class CheckArtistResponse(check_res: Boolean)
+  case class FirstArtistResponse(res : SpotifyResponse)
 
   def get_latest_artist(artists : JsValue) : Option[String] = {
     (artists \ "items").as[List[JsValue]] match {
@@ -40,8 +45,8 @@ class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) e
 
   var completed_initial = false
 
-  var working_map : Set[String] = Set[String]()
-  var completed_map : Set[String] = Set[String]()
+  var album_actor_map : Map[String, ActorRef] = Map[String, ActorRef]()
+  var artist_urls_working : Set[String] = Set[String]()
 
   val req_actor = context.actorSelection("/user/req_actor")
   val db_actor = context.actorSelection("/user/db-actor")
@@ -53,12 +58,10 @@ class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) e
 
   override def receive = {
     case HandleJobStart(url) => {
-      self ! HandleJobStartInternal(url)
+      req_actor ! SpotifyRequest(url, FirstArtistResponse)
     }
-    case HandleJobStartInternal(url) => {
-      req_actor ! SpotifyRequest(url, HandleJobEnd)
-    }
-    case HandleJobEnd(SpotifyResponse(x, _)) => {
+    case FirstArtistResponse(SpotifyResponse(x, rep)) => {
+      completed_initial = true  
       x \ "artists" \ "total" match {
         case JsDefined(JsNumber(total_artists)) => {
           log.info("TOTAL ARTISTS: {}", total_artists)
@@ -66,54 +69,61 @@ class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) e
         }
         case _ => log.error("No total value")
       }
+      self ! HandleJobEnd(SpotifyResponse(x, rep))
+    }
+    case HandleJobStartInternal(url) => {
+      log.info("new job {}", url)
+      checking_artist = checking_artist + url
+      req_actor ! SpotifyRequest(url, HandleJobEnd)
+    }
+    case HandleJobEnd(SpotifyResponse(x, req)) => {
       x \ "artists" \ "next" match {
         case JsDefined(JsString(x)) => {
-          respond_to ! AddUrl(x)
+          self ! HandleJobStartInternal(x)
         }
         case JsDefined(JsNull) => println("Finished....")
         case _ => log.error("Invalid input")
       }
       for (artist <- (x \ "artists" \ "items").as[Seq[JsObject]]) {
         val artist_id = (artist \ "id").as[String]
-        val url = s"https://api.spotify.com/v1/artists/$artist_id/albums"
-        self ! HandleIndividualArtist(url)
+        self ! HandleIndividualArtist(artist_id)
       }
-      completed_initial = true
+      checking_artist = checking_artist - req.uri
     }
-    case HandleIndividualArtist(url) => {
-      working_map = working_map + url 
+    case HandleIndividualArtist(artist_id) => {
+      val album_actor = context.actorOf(AlbumActor.props(artist_id, self), 
+        s"artist_$artist_id")
+      album_actor_map.put(artist_id, album_actor)
       req_actor ! SpotifyRequest(url, CompletedIndividualArtist)    
     }
-
-
     case CompletedIndividualArtist(SpotifyResponse(x, SpotifyRequest(url, _))) => {
       val newest_id = get_latest_artist(x)
       working_map = working_map - url
       completed_map = completed_map + url
-      // db_actor ! CheckIfCurrent(url, newest_id, self, CheckArtistResponse)
     }
 
     case CheckArtistResponse(yes_or_no) => {
     }
-
-
     case CheckStatus => {
-      if (completed_initial){
-        if(working_map.isEmpty){
-          log.debug("Completed individuals. Responding to {}", respond_to)
-          (respond_to) ! FinishedUrl(work_url, total_individual_requests)   
-        }
-        else {
-          working_map.foreach(x => {
-            log.debug("Not completed individual: {}", x)
-            self ! HandleIndividualArtist(x)
-          })
-        }
-      }
-      else {
-        log.debug("Not completed initial")
-        self ! HandleJobStartInternal(work_url)
+      if(artist_urls_working.emtpy() && album_actor_map.empty()){
       }
     }
   }
+}
+
+object TestArtistActor extends App {
+  import ArtistActor._
+  implicit val context = ActorSystem()
+  implicit val materializer = ActorMaterializer()
+  implicit val executionContext = context.dispatcher
+
+  val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
+
+  val rel_app = context.actorOf(ReleaseActor.props(false), "rel-app")
+  val art_actor = context.actorOf(ArtistActor.props("asdf", rel_app, true), "test_artist")  
+
+  art_actor ! HandleJobStart("https://api.spotify.com/v1/me/following?type=artist&limit=20")
+
+  readLine()
+  context.terminate()
 }

@@ -71,7 +71,6 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
       val someting = false
       respond_to ! respond_with(someting)
     }
-
     case CreateDbs => {
       val create_str = s"CREATE TABLE spotify_artist(mus_sync_user_id VARCHAR, spotify_artist_id VARCHAR, when_added TIMESTAMP)"
 
