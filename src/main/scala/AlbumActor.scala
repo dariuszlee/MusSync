@@ -5,6 +5,9 @@ import akka.actor.Props
 import akka.stream.ActorMaterializer
 
 import play.api.libs.json.JsObject
+import play.api.libs.json.JsNull
+import play.api.libs.json.JsString
+import play.api.libs.json.JsDefined
 
 import SpotifyRequestActor._
 
@@ -17,36 +20,63 @@ object AlbumActor {
   case class GetAlbum(uri: String)
   case class GetAlbumResponse(res: SpotifyResponse)
   case class HandleAlbumList(albums : Seq[JsObject])
+
+  case object CheckAlbumStatus
+  case object Shutdown
 }
 
 class AlbumActor(artist_id: String, respond_to: ActorRef) extends Actor with akka.actor.ActorLogging {
   import AlbumActor._
+  import ArtistActor._
 
   val url = s"https://api.spotify.com/v1/artists/$artist_id/albums"
   val req_actor = context.actorSelection("/user/req_actor")
 
   var total_albums = 0
 
+  var album_requests_urls : Set[String] = Set[String]()
+
   override def receive = {
     case StartAlbumJob => {
+      album_requests_urls += url
       req_actor ! SpotifyRequest(url, FirstAlbumResponse)
     }
     case FirstAlbumResponse(SpotifyResponse(res, req)) => {
       total_albums = (res \ "total").as[Int]
       self ! GetAlbumResponse(SpotifyResponse(res, req))
     }
-    case GetAlbum(uri: String) => {
-      req_actor ! SpotifyRequest(url, GetAlbumResponse)
+    case GetAlbum(get_album_url: String) => {
+      album_requests_urls = album_requests_urls + get_album_url
+      req_actor ! SpotifyRequest(get_album_url, GetAlbumResponse)
     }
     case GetAlbumResponse(SpotifyResponse(res, req)) => {
-      val next = (res \ "next").as[String]
-      self ! GetAlbum(next)
+      album_requests_urls = album_requests_urls - req.uri
       self ! HandleAlbumList((res \ "items").as[Seq[JsObject]])
+
+      res \ "next" match {
+        case JsDefined(JsString(next)) => {
+          self ! GetAlbum(next)
+        }
+        case JsDefined(JsNull) => {
+          log.info("Getting albums from artists collection finished...")
+          respond_to ! CompletedIndividualArtist(artist_id)
+          self ! Shutdown // We want the shutdown message to be the last message sent 
+        }
+      }
     }
     case HandleAlbumList(albums) => {
       for(i <- albums) {
         println((i \ "id").as[String])
       }
+    }
+    case CheckAlbumStatus => {
+      for(album_request <- album_requests_urls){
+        self ! GetAlbum(album_request)
+      }
+    }
+    case Shutdown => {
+      log.info("Shutding down {}...", artist_id)
+      context.stop(self)
     }
   }
 }
