@@ -89,7 +89,7 @@ class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) e
     }
     case HandleIndividualArtist(artist_id) => {
       if(!album_actor_map.contains(artist_id)){
-        val album_actor = context.actorOf(AlbumActor.props(artist_id, self), 
+        val album_actor = context.actorOf(AlbumActor.album_actor_dump_props(artist_id, self), 
           s"artist_$artist_id")
         album_actor_map.put(artist_id, album_actor)
         album_actor ! StartAlbumJob

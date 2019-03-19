@@ -12,7 +12,7 @@ import play.api.libs.json.JsDefined
 import SpotifyRequestActor._
 
 object AlbumActor {
-  def props(artist_id: String, respond_to: ActorRef) : Props = Props(new AlbumActor(artist_id, respond_to))
+  def album_actor_dump_props(artist_id: String, respond_to: ActorRef) : Props = Props(new AlbumActorDumper(artist_id, respond_to))
 
   case object StartAlbumJob
   case class FirstAlbumResponse(res: SpotifyResponse)
@@ -25,12 +25,13 @@ object AlbumActor {
   case object Shutdown
 }
 
-class AlbumActor(artist_id: String, respond_to: ActorRef) extends Actor with akka.actor.ActorLogging {
+class AlbumActorDumper(artist_id: String, respond_to: ActorRef) extends Actor with akka.actor.ActorLogging {
   import AlbumActor._
   import ArtistActor._
 
   val url = s"https://api.spotify.com/v1/artists/$artist_id/albums"
   val req_actor = context.actorSelection("/user/req_actor")
+  val db_actor = context.actorSelection("/user/db_actor")
 
   var total_albums = 0
 
@@ -65,9 +66,8 @@ class AlbumActor(artist_id: String, respond_to: ActorRef) extends Actor with akk
       }
     }
     case HandleAlbumList(albums) => {
-      for(i <- albums) {
-        println((i \ "id").as[String])
-      }
+      import SpotifyDbActor.{DumpAlbums}
+      db_actor ! DumpAlbums("fake_user", albums.map(x => ((x \ "id").as[String])))
     }
     case CheckAlbumStatus => {
       for(album_request <- album_requests_urls){
@@ -81,6 +81,20 @@ class AlbumActor(artist_id: String, respond_to: ActorRef) extends Actor with akk
   }
 }
 
+object AlbumActorChecker {
+  def props : Props = Props(new AlbumActorChecker())
+
+  case object DefaultAction
+}
+
+class AlbumActorChecker extends Actor with akka.actor.ActorLogging {
+  import AlbumActorChecker._
+
+  override def receive = {
+    case DefaultAction => {}
+  }
+}
+
 object TestAlbumActor extends App {
   implicit val context = ActorSystem()
   implicit val materializer = ActorMaterializer()
@@ -91,9 +105,11 @@ object TestAlbumActor extends App {
   val probe : TestProbe = new TestProbe(context);
   val mock : ActorRef = probe.ref;
 
-  val alb_act = context.actorOf(AlbumActor.props("1vCWHaC5f2uS3yhpwWbIA6", mock), "alb-act")  
   import akka.routing.SmallestMailboxPool
   val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
+  val db_actor = context.actorOf(SpotifyDbActor.props, "db_actor")
+
+  val alb_act = context.actorOf(AlbumActor.album_actor_dump_props("1vCWHaC5f2uS3yhpwWbIA6", mock), "alb-act")  
   alb_act ! StartAlbumJob
 
   readLine()

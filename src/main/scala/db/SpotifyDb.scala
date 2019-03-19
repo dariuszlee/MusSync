@@ -12,7 +12,8 @@ import java.sql.Timestamp
 import java.util.Calendar
 
 object SpotifyDbActor {
-  case class InsertSpotifyItem(url: String, new_id: String, is_dump: Boolean)
+  case class DumpAlbums(user_id: String, album_ids : Seq[String])
+  case class InsertSpotifyItem(id: String)
   case class PSQLExceptionWrapper(ex: PSQLException)
   case object GetUnique
   case class CheckIfCurrent(art_id: String, alb_id: String, from: ActorRef, respond_with: Boolean => Object)
@@ -27,7 +28,7 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
   import SpotifyDbActor._
 
   val driver : String = "org.postgresql.Driver"
-  val username = "dzlyy"
+  val username = "dariuslee"
   val url = "jdbc:postgresql:mus_sync_test"
   val spotify_artist_db_params = "mus_sync_user_id, spotify_artist_id, when_added"
   val connection : Connection = DriverManager.getConnection(url, username, "ma456tilda")
@@ -52,9 +53,19 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
       }
       prepared.close()
     }
-    case InsertSpotifyItem(url, new_id, is_dump) => {
-      unique_ids += url  
+    case DumpAlbums(user_id, albums) => {
+      var value_string = ""
+      for(album <- albums) {
+        value_string += s"('$user_id', '$album', false),"
+      }
+      value_string = value_string.dropRight(1)
 
+      var query_string = s"INSERT INTO spotify_albums(user_id, album_id, is_checked) VALUES $value_string"
+
+      val statement = connection.createStatement()
+      val result_set = statement.executeUpdate(query_string)
+    }
+    case InsertSpotifyItem(new_id) => {
       val statement = connection.createStatement()
       val result_set = statement.executeQuery(s"INSERT INTO spotify_artists()")
       result_set.next()
