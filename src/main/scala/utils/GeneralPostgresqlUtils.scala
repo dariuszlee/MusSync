@@ -26,11 +26,28 @@ class PostgresUtils extends Actor with akka.actor.ActorLogging {
 
       val create_user_table = "CREATE TABLE IF NOT EXISTS mus_sync_user(id varchar UNIQUE NOT NULL, login varchar UNIQUE NOT NULL, password_hash varchar UNIQUE NOT NULL)"
       val create_spotify_account = "CREATE TABLE IF NOT EXISTS spotify_user(spotify_id VARCHAR UNIQUE NOT NULL, id varchar REFERENCES mus_sync_user(id), refresh_token VARCHAR)"
+      val create_spotify_artist = "CREATE TABLE IF NOT EXISTS spotify_artist(id varchar REFERENCES mus_sync_user(id), spotify_id VARCHAR REFERENCES spotify_user(spotify_id), spotify_artist_id VARCHAR, date_added TIMESTAMP)"
+      val create_spotify_album = "CREATE TABLE IF NOT EXISTS spotify_ablum(spotify_id VARCHAR REFERENCES spotify_user(spotify_id) NOT NULL, id varchar REFERENCES mus_sync_user(id), spotify_album_id VARCHAR NOT NULL, date_added TIMESTAMP NOT NULL, tag VARCHAR NOT NULL)"
 
       statement.execute(create_user_table)
       statement.execute(create_spotify_account)
+      statement.execute(create_spotify_artist)
+      statement.execute(create_spotify_album)
       statement.close()
       log.info("Created tables: create_user_table, create_spotify_account")
+    }
+    case RemoveDbs => {
+      val drop_user_table = "DROP TABLE IF EXISTS mus_sync_user"
+      val drop_spotify_account= "DROP TABLE IF EXISTS spotify_user"      
+      val drop_spotify_artist = "DROP TABLE IF EXISTS spotify_artist"
+      val drop_spotify_album = "DROP TABLE IF EXISTS spotify_album"
+
+      val statement = connection.createStatement()
+      statement.execute(drop_user_table)
+      statement.execute(drop_spotify_account)
+      statement.execute(drop_spotify_artist)
+      statement.execute(drop_spotify_album)
+      statement.close()
     }
   }
 }

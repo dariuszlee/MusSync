@@ -11,13 +11,23 @@ import org.postgresql.util.PSQLException
 import java.sql.Timestamp
 import java.util.Calendar
 
+object AlbumTag extends Enumeration {
+  type AlbumTag = Value
+  val New, Seen, Disliked, Liked, Old = Value
+}
+import AlbumTag._
+
 object SpotifyDbActor {
   case class DumpAlbums(user_id: String, album_ids : Seq[String])
   case class InsertSpotifyItem(id: String)
   case class PSQLExceptionWrapper(ex: PSQLException)
   case object GetUnique
   case class CheckIfCurrent(art_id: String, alb_id: String, from: ActorRef, respond_with: Boolean => Object)
-  case class InsertArtist(mus_sync_user: String, spotify_artist_id: String)
+  case class InsertArtist(spotify_id: String, spotify_artist_id: String)
+
+  case class InsertSpotifyUser()
+  case class InsertSpotifyAlbum(mus_id: String, spotify_id: String, spotify_artist_id: String, tag: AlbumTag)
+  case class InsertSpotifyArtist(mus_id: String, spotify_id: String, spotify_artist_id: String)
 
   case object CreateDbs
 
