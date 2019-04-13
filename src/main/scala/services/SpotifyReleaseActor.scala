@@ -1,3 +1,5 @@
+package collector
+
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.actor.Actor
