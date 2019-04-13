@@ -1,4 +1,4 @@
-package collector
+package services.spotify
 
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
