@@ -1,3 +1,5 @@
+package services.spotify
+
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.actor.Actor
@@ -10,9 +12,10 @@ import play.api.libs.json.JsString
 import play.api.libs.json.JsDefined
 
 import SpotifyRequestActor._
+import db.SpotifyDbActor
 
-object AlbumActor {
-  def album_actor_dump_props(artist_id: String, respond_to: ActorRef) : Props = Props(new AlbumActorDumper(artist_id, respond_to))
+object SpotifyAlbumActor {
+  def props(artist_id: String, respond_to: ActorRef) : Props = Props(new SpotifyAlbumActor(artist_id, respond_to))
 
   case object StartAlbumJob
   case class FirstAlbumResponse(res: SpotifyResponse)
@@ -25,9 +28,9 @@ object AlbumActor {
   case object Shutdown
 }
 
-class AlbumActorDumper(artist_id: String, respond_to: ActorRef) extends Actor with akka.actor.ActorLogging {
-  import AlbumActor._
-  import ArtistActor._
+class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef) extends Actor with akka.actor.ActorLogging {
+  import services.spotify.SpotifyAlbumActor._
+  import services.spotify.SpotifyArtistActor._
 
   val url = s"https://api.spotify.com/v1/artists/$artist_id/albums"
   val req_actor = context.actorSelection("/user/req_actor")
@@ -99,7 +102,7 @@ object TestAlbumActor extends App {
   implicit val context = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = context.dispatcher
-  import AlbumActor._
+  import SpotifyAlbumActor._
 
   import akka.testkit.TestProbe
   val probe : TestProbe = new TestProbe(context);
@@ -109,7 +112,7 @@ object TestAlbumActor extends App {
   val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
   val db_actor = context.actorOf(SpotifyDbActor.props, "db_actor")
 
-  val alb_act = context.actorOf(AlbumActor.album_actor_dump_props("1vCWHaC5f2uS3yhpwWbIA6", mock), "alb-act")  
+  val alb_act = context.actorOf(SpotifyAlbumActor.props("1vCWHaC5f2uS3yhpwWbIA6", mock), "alb-act")  
   alb_act ! StartAlbumJob
 
   readLine()

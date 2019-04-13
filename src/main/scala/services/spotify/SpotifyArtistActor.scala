@@ -1,3 +1,5 @@
+package services.spotify
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.actor.Actor
@@ -16,11 +18,11 @@ import play.api.libs.json.JsDefined
 import scala.collection.mutable.Queue
 import scala.collection.mutable.HashMap
 
-import SpotifyRequestActor._
-import SpotifyDbActor._
+import services.spotify.SpotifyRequestActor._
+import db.SpotifyDbActor._
 
-object ArtistActor {
-  def props(url : String, respond_to: ActorRef, is_debug: Boolean) : Props = Props(new ArtistActor(url, respond_to, is_debug))
+object SpotifyArtistActor {
+  def props(url : String, respond_to: ActorRef, is_debug: Boolean) : Props = Props(new SpotifyArtistActor(url, respond_to, is_debug))
 
   case class HandleJobStart(url: String)
   case class HandleJobStartInternal(url: String)
@@ -39,10 +41,10 @@ object ArtistActor {
   }
 }
 
-class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) extends Actor with akka.actor.ActorLogging {
-  import ArtistActor._
-  import AlbumActor._
-  import ReleaseActor._
+class SpotifyArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) extends Actor with akka.actor.ActorLogging {
+  import SpotifyArtistActor._
+  import SpotifyAlbumActor._
+  import SpotifyReleaseActor._
 
   var completed_initial = false
 
@@ -89,7 +91,7 @@ class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) e
     }
     case HandleIndividualArtist(artist_id) => {
       if(!album_actor_map.contains(artist_id)){
-        val album_actor = context.actorOf(AlbumActor.album_actor_dump_props(artist_id, self), 
+        val album_actor = context.actorOf(SpotifyAlbumActor.props(artist_id, self), 
           s"artist_$artist_id")
         album_actor_map.put(artist_id, album_actor)
         album_actor ! StartAlbumJob
@@ -109,7 +111,7 @@ class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) e
           self ! HandleJobStartInternal(artist_collect_req)
         }
         for((_, album_actor) <- album_actor_map) {
-          album_actor ! AlbumActor.CheckAlbumStatus
+          album_actor ! CheckAlbumStatus
         }
       }
     }
@@ -117,19 +119,19 @@ class ArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) e
 }
 
 object TestArtistActor extends App {
-  import ArtistActor._
+  import SpotifyArtistActor._
   implicit val context = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = context.dispatcher
 
   val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
 
-  val rel_app = context.actorOf(ReleaseActor.props(false), "rel-app")
-  val art_actor = context.actorOf(ArtistActor.props("asdf", rel_app, true), "test_artist")  
+  val rel_app = context.actorOf(SpotifyReleaseActor.props(false), "rel-app")
+  val art_actor = context.actorOf(SpotifyArtistActor.props("asdf", rel_app, true), "test_artist")  
 
   import scala.concurrent.duration._
   art_actor ! HandleJobStart("https://api.spotify.com/v1/me/following?type=artist&limit=20")
-  context.scheduler.schedule(3000 milliseconds, 3000 milliseconds, art_actor, ArtistActor.CheckStatus)
+  context.scheduler.schedule(3000 milliseconds, 3000 milliseconds, art_actor, SpotifyArtistActor.CheckStatus)
 
   readLine()
   context.terminate()

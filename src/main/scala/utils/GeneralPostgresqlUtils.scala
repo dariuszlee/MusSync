@@ -11,6 +11,7 @@ object PostgresUtils {
   def props : Props = Props(new PostgresUtils())
 
   case object InitializeEmpty
+  case object RemoveDbs
 }
 
 class PostgresUtils extends Actor with akka.actor.ActorLogging {

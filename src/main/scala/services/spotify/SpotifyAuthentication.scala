@@ -1,3 +1,5 @@
+package services.spotify
+
 import scala.util.Success
 import scala.util.Failure
 
@@ -32,6 +34,8 @@ import play.api.libs.json.JsDefined
 import java.net.URLEncoder
 import akka.util.ByteString
 import akka.stream.scaladsl.Source
+
+import utils.AkkaHttpUtils
 
 object SessionActor {
   case class SessionData(token : String, refreshToken : String)

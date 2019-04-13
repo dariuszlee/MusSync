@@ -1,3 +1,5 @@
+package services.spotify
+
 import akka.pattern.pipe
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
@@ -26,6 +28,8 @@ import akka.http.scaladsl.Http
 import akka.util.ByteString
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
+
+import utils.AkkaHttpUtils
 
 object SpotifyRequestActor {
   case class SpotifyRequest(uri : String, respond_with : SpotifyResponse => Object)
