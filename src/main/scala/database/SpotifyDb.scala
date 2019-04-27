@@ -25,13 +25,10 @@ object SpotifyDbActor {
   case class PSQLExceptionWrapper(ex: PSQLException)
   case object GetUnique
   case class CheckIfCurrent(art_id: String, alb_id: String, from: ActorRef, respond_with: Boolean => Object)
-  case class InsertArtist(spotify_id: String, spotify_artist_id: String)
 
   case class InsertSpotifyUser()
   case class InsertSpotifyAlbum(mus_id: String, spotify_id: String, spotify_artist_id: String, tag: AlbumTag)
   case class InsertSpotifyArtist(mus_id: String, spotify_id: String, spotify_artist_id: String)
-
-  case object CreateDbs
 
   def props = Props(new SpotifyDbActor)
 }
@@ -42,7 +39,7 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
   val driver : String = "org.postgresql.Driver"
   val username = "dariuslee"
   val url = "jdbc:postgresql:mus_sync_test"
-  val spotify_artist_db_params = "mus_sync_user_id, spotify_artist_id, when_added"
+  val spotify_artist_db_params = "mus_sync_user_id, spotify_user_id, spotify_artist_id, when_added"
   val connection : Connection = DriverManager.getConnection(url, username, "ma456tilda")
 
   val calendar = Calendar.getInstance()
@@ -50,9 +47,9 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
   var unique_ids = Set[String]()
 
   def receive = {
-    case InsertArtist(mus_sync_user, spotify_artist_id) => {
+    case InsertSpotifyArtist(mus_sync_user, spot_user_id, spotify_artist_id) => {
       val time = new Timestamp(calendar.getTime().getTime())
-      val query_str = s"INSERT INTO spotify_artists($spotify_artist_db_params) VALUES('$mus_sync_user', '$spotify_artist_id', ?)"
+      val query_str = s"INSERT INTO spotify_artists($spotify_artist_db_params) VALUES('$mus_sync_user', '$spot_user_id', '$spotify_artist_id', '$time')"
       log.info(s"Executing: $query_str")
       val prepared = connection.prepareStatement(query_str)
       prepared.setTimestamp(1, time)
@@ -94,12 +91,6 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
       val someting = false
       respond_to ! respond_with(someting)
     }
-    case CreateDbs => {
-      val create_str = s"CREATE TABLE spotify_artist(mus_sync_user_id VARCHAR, spotify_artist_id VARCHAR, when_added TIMESTAMP)"
-
-      val statement = connection.createStatement()
-      val result_set = statement.executeQuery(create_str)
-    }
   }
 }
 
@@ -121,8 +112,9 @@ object SpotifyDbTests extends App {
   val dbActor = system.actorOf(Props(new SpotifyDbActor()), "spotifyDb")
   val test_actor = system.actorOf(Props(new TestActor()), "test_actor")
 
+  dbActor ! InsertSpotifyArtist("asdf", "asdf", "asdf")
   // dbActor ! CheckIfCurrent("asdf", "asdf", test_actor, TestActor.MyCurrentCheck)
-  dbActor ! CreateDbs
+  // dbActor ! CreateDbs
 
   readLine()
   system.terminate()

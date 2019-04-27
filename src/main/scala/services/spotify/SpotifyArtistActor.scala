@@ -71,10 +71,6 @@ class SpotifyArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boo
       }
       self ! HandleJobEnd(SpotifyResponse(x, rep))
     }
-    case HandleJobStartInternal(url) => {
-      artist_urls_working = artist_urls_working + url
-      req_actor ! SpotifyRequest(url, HandleJobEnd)
-    }
     case HandleJobEnd(SpotifyResponse(x, req)) => {
       x \ "artists" \ "next" match {
         case JsDefined(JsString(x)) => {
@@ -89,8 +85,13 @@ class SpotifyArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boo
       }
       artist_urls_working = artist_urls_working - req.uri
     }
+    case HandleJobStartInternal(url) => {
+      artist_urls_working = artist_urls_working + url
+      req_actor ! SpotifyRequest(url, HandleJobEnd)
+    }
     case HandleIndividualArtist(artist_id) => {
       if(!album_actor_map.contains(artist_id)){
+        db_actor ! InsertSpotifyArtist(mus_sync_artist, spot_user_id, spotify_artist_id)
         val album_actor = context.actorOf(SpotifyAlbumActor.props(artist_id, self), 
           s"artist_$artist_id")
         album_actor_map.put(artist_id, album_actor)

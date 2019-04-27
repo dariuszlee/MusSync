@@ -1,0 +1,588 @@
+{
+    "artists": {
+        "items": [{
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/00jACgDWIBdPM4eH8nORwz"
+            },
+            "followers": {
+                "href": null,
+                "total": 3084
+            },
+            "genres": ["alternative r&b", "portland hip hop"],
+            "href": "https://api.spotify.com/v1/artists/00jACgDWIBdPM4eH8nORwz",
+            "id": "00jACgDWIBdPM4eH8nORwz",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/01464c3a225a6dcd39d1a06e67f0fba36a96c278",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/82a9f51ab14fccd080bc5e4b266425f306da2741",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/e05cd1cc60decb437d29402493082bf1856dc698",
+                "width": 160
+            }],
+            "name": "Reva DeVito",
+            "popularity": 47,
+            "type": "artist",
+            "uri": "spotify:artist:00jACgDWIBdPM4eH8nORwz"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/01aC2ikO4Xgb2LUpf9JfKp"
+            },
+            "followers": {
+                "href": null,
+                "total": 525148
+            },
+            "genres": ["blues-rock", "electric blues", "funk", "garage rock", "modern blues", "modern blues rock", "soul blues", "texas blues"],
+            "href": "https://api.spotify.com/v1/artists/01aC2ikO4Xgb2LUpf9JfKp",
+            "id": "01aC2ikO4Xgb2LUpf9JfKp",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/c5288b649f3ad0e65b5e33514bae70dc77bbf46e",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/27c18cfea658fd49d3994cc737b6fa6013738e7e",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/5d2c31d5381d2d29bd5348ef5c4743af19eab526",
+                "width": 160
+            }],
+            "name": "Gary Clark Jr.",
+            "popularity": 68,
+            "type": "artist",
+            "uri": "spotify:artist:01aC2ikO4Xgb2LUpf9JfKp"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/05YVYeV4HxYp5rrWalvuE1"
+            },
+            "followers": {
+                "href": null,
+                "total": 81665
+            },
+            "genres": ["jazz funk", "smooth jazz"],
+            "href": "https://api.spotify.com/v1/artists/05YVYeV4HxYp5rrWalvuE1",
+            "id": "05YVYeV4HxYp5rrWalvuE1",
+            "images": [{
+                "height": 1128,
+                "url": "https://i.scdn.co/image/40f39e48362c76c3c794a28466922e0f405d7b4a",
+                "width": 1000
+            }, {
+                "height": 722,
+                "url": "https://i.scdn.co/image/76a27d62502285c12bf3c369e2367adb45a2b4e5",
+                "width": 640
+            }, {
+                "height": 226,
+                "url": "https://i.scdn.co/image/fb38dc7a7bb7afbeddbca13a7253dbb5bdbbe787",
+                "width": 200
+            }, {
+                "height": 72,
+                "url": "https://i.scdn.co/image/a885915d231aeb1929528cbcea6477cda3577fe3",
+                "width": 64
+            }],
+            "name": "Grover Washington, Jr.",
+            "popularity": 57,
+            "type": "artist",
+            "uri": "spotify:artist:05YVYeV4HxYp5rrWalvuE1"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/05YrP00agTrYezUyAsukKf"
+            },
+            "followers": {
+                "href": null,
+                "total": 3441
+            },
+            "genres": [],
+            "href": "https://api.spotify.com/v1/artists/05YrP00agTrYezUyAsukKf",
+            "id": "05YrP00agTrYezUyAsukKf",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/41e629246b83334184e917d020d16a9cd44ba3ca",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/08b6d7dccf0c7e0cd1949ae5f43c72e168230dd0",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/15fe6130db346c649192c67a0be119514c1232c1",
+                "width": 160
+            }],
+            "name": "Dan Kye",
+            "popularity": 36,
+            "type": "artist",
+            "uri": "spotify:artist:05YrP00agTrYezUyAsukKf"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/05g1p6KAyYQ03SjqRiF756"
+            },
+            "followers": {
+                "href": null,
+                "total": 5330
+            },
+            "genres": ["belgian hip hop"],
+            "href": "https://api.spotify.com/v1/artists/05g1p6KAyYQ03SjqRiF756",
+            "id": "05g1p6KAyYQ03SjqRiF756",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/dbbe35f7094cbdc3ce9a862a646629dd329756c7",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/4fad04ab76e4d392f3265463afb76f3f22e881d9",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/ef90f0d8682953d6d13c43e529fdfdc4cac665bc",
+                "width": 160
+            }],
+            "name": "Brihang",
+            "popularity": 34,
+            "type": "artist",
+            "uri": "spotify:artist:05g1p6KAyYQ03SjqRiF756"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/07UJz804RJxqNvxFXC3h9H"
+            },
+            "followers": {
+                "href": null,
+                "total": 52159
+            },
+            "genres": ["electronic trap", "vapor twitch"],
+            "href": "https://api.spotify.com/v1/artists/07UJz804RJxqNvxFXC3h9H",
+            "id": "07UJz804RJxqNvxFXC3h9H",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/9f28e5f28864730d2e1ce102a8031ad382a51c9b",
+                "width": 640
+            }, {
+                "height": 300,
+                "url": "https://i.scdn.co/image/f06fa70fecb3ae18c810e213543467b1255911bf",
+                "width": 300
+            }, {
+                "height": 64,
+                "url": "https://i.scdn.co/image/c4370764406aacd3b00e1969fc36efec47923dbe",
+                "width": 64
+            }],
+            "name": "Sam Gellaitry",
+            "popularity": 50,
+            "type": "artist",
+            "uri": "spotify:artist:07UJz804RJxqNvxFXC3h9H"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/07d5etnpjriczFBB8pxmRe"
+            },
+            "followers": {
+                "href": null,
+                "total": 217602
+            },
+            "genres": ["alternative r&b", "chicago rap", "hip hop", "indie r&b", "neo soul", "pop rap", "r&b", "rap", "southern hip hop", "underground hip hop"],
+            "href": "https://api.spotify.com/v1/artists/07d5etnpjriczFBB8pxmRe",
+            "id": "07d5etnpjriczFBB8pxmRe",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/54e909c481e719397690089bc8382db9211abd5c",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/db06ce7eca404691f23afde8e9182a8ea3ceffac",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/a65345162fb9996307bfb4ce513184da4e40a198",
+                "width": 160
+            }],
+            "name": "BJ The Chicago Kid",
+            "popularity": 68,
+            "type": "artist",
+            "uri": "spotify:artist:07d5etnpjriczFBB8pxmRe"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/08GYdAzNDEZZ2nHiYBh23v"
+            },
+            "followers": {
+                "href": null,
+                "total": 3750
+            },
+            "genres": ["minnesota hip hop"],
+            "href": "https://api.spotify.com/v1/artists/08GYdAzNDEZZ2nHiYBh23v",
+            "id": "08GYdAzNDEZZ2nHiYBh23v",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/26cc8b99e12b5595fbeda8a73a7cc2dfb3fd183a",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/63930e7bf92830f4562b55a26c752f183bcf4df6",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/955eccef81006f6b3f72de3a9621b2b021dff818",
+                "width": 160
+            }],
+            "name": "Greg Grease",
+            "popularity": 30,
+            "type": "artist",
+            "uri": "spotify:artist:08GYdAzNDEZZ2nHiYBh23v"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/08LrhaMKwKuGbB9XHBEjXF"
+            },
+            "followers": {
+                "href": null,
+                "total": 8541
+            },
+            "genres": ["new tribe"],
+            "href": "https://api.spotify.com/v1/artists/08LrhaMKwKuGbB9XHBEjXF",
+            "id": "08LrhaMKwKuGbB9XHBEjXF",
+            "images": [{
+                "height": 1000,
+                "url": "https://i.scdn.co/image/3c894404413c5a4981a05a1898946ebe8b8b09a9",
+                "width": 1000
+            }, {
+                "height": 640,
+                "url": "https://i.scdn.co/image/6f818ddb8e1bda8a008feb822b011189075ba738",
+                "width": 640
+            }, {
+                "height": 200,
+                "url": "https://i.scdn.co/image/2fc24c96db7bf4adcc8c059384e7ba245861fe18",
+                "width": 200
+            }, {
+                "height": 64,
+                "url": "https://i.scdn.co/image/e8c96c7d3b01f0579076d012f91c09e5ec9cf508",
+                "width": 64
+            }],
+            "name": "Manu Delago",
+            "popularity": 38,
+            "type": "artist",
+            "uri": "spotify:artist:08LrhaMKwKuGbB9XHBEjXF"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/09hVIj6vWgoCDtT03h8ZCa"
+            },
+            "followers": {
+                "href": null,
+                "total": 935372
+            },
+            "genres": ["alternative hip hop", "conscious hip hop", "east coast hip hop", "gangster rap", "hardcore hip hop", "hip hop", "jazz rap", "pop rap", "rap"],
+            "href": "https://api.spotify.com/v1/artists/09hVIj6vWgoCDtT03h8ZCa",
+            "id": "09hVIj6vWgoCDtT03h8ZCa",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/6f987ab74c72f0c50b19b05ea775bc4033c57706",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/6781371e793ab66c6775e97b96dbf1dd127b83c1",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/98a7bb2194747b049668d58591d8ac2628543ea4",
+                "width": 160
+            }],
+            "name": "A Tribe Called Quest",
+            "popularity": 71,
+            "type": "artist",
+            "uri": "spotify:artist:09hVIj6vWgoCDtT03h8ZCa"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/09kXLeOXRyfNQMXRaDO4qA"
+            },
+            "followers": {
+                "href": null,
+                "total": 38112
+            },
+            "genres": ["art pop", "chamber psych", "electropop", "uk alternative pop"],
+            "href": "https://api.spotify.com/v1/artists/09kXLeOXRyfNQMXRaDO4qA",
+            "id": "09kXLeOXRyfNQMXRaDO4qA",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/560a37dd2a626627a37c9b68b7a090c91fa223e4",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/de3fccc2309e291e51420d1d81395a6ad6096429",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/fd94335b982e85dbfb5a609c2edbf141b1e0c596",
+                "width": 160
+            }],
+            "name": "Nilüfer Yanya",
+            "popularity": 61,
+            "type": "artist",
+            "uri": "spotify:artist:09kXLeOXRyfNQMXRaDO4qA"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/0CKa42Jqrc9fSFbDjePaXP"
+            },
+            "followers": {
+                "href": null,
+                "total": 424371
+            },
+            "genres": ["alternative hip hop", "conscious hip hop", "dirty south rap", "gangster rap", "hip hop", "pop rap", "rap", "southern hip hop", "trap music", "underground hip hop"],
+            "href": "https://api.spotify.com/v1/artists/0CKa42Jqrc9fSFbDjePaXP",
+            "id": "0CKa42Jqrc9fSFbDjePaXP",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/87a38fd3dcdced39a178466c2d28aca152aaee18",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/db975b8459d4a5b2137de67c35f77d913ff78e5e",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/e90efe0b0a88cfa393e9117a60464b071b606c65",
+                "width": 160
+            }],
+            "name": "Big K.R.I.T.",
+            "popularity": 66,
+            "type": "artist",
+            "uri": "spotify:artist:0CKa42Jqrc9fSFbDjePaXP"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/0CUpzKPDfIVzYqMn47jiV3"
+            },
+            "followers": {
+                "href": null,
+                "total": 81514
+            },
+            "genres": ["funk", "soul"],
+            "href": "https://api.spotify.com/v1/artists/0CUpzKPDfIVzYqMn47jiV3",
+            "id": "0CUpzKPDfIVzYqMn47jiV3",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/80c8a2f16f88bec7ea31f07e3db5d3dac7cc4585",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/d447076e4e707281cd42a947ed850f55b9a2a9a1",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/02058f584250bdee79444ad1980b03bdaaecdbf0",
+                "width": 160
+            }],
+            "name": "Curtis Harding",
+            "popularity": 55,
+            "type": "artist",
+            "uri": "spotify:artist:0CUpzKPDfIVzYqMn47jiV3"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/0Cioop2zjxXxtcPUme7R46"
+            },
+            "followers": {
+                "href": null,
+                "total": 23151
+            },
+            "genres": ["contemporary jazz", "fourth world", "indie jazz", "jazz brass", "nu jazz"],
+            "href": "https://api.spotify.com/v1/artists/0Cioop2zjxXxtcPUme7R46",
+            "id": "0Cioop2zjxXxtcPUme7R46",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/3b7aad7408296fda710fcf023ab60b727b691186",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/d659804080f647cbda763fa353d6d50fe424b817",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/84dd568d4bcc22f6a8aedfb400bb2b6385c84d2a",
+                "width": 160
+            }],
+            "name": "Matthew Halsall",
+            "popularity": 48,
+            "type": "artist",
+            "uri": "spotify:artist:0Cioop2zjxXxtcPUme7R46"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/0D3h8NZqNp7BN97JwtV6eW"
+            },
+            "followers": {
+                "href": null,
+                "total": 53624
+            },
+            "genres": ["contemporary jazz", "fourth world", "jazz piano"],
+            "href": "https://api.spotify.com/v1/artists/0D3h8NZqNp7BN97JwtV6eW",
+            "id": "0D3h8NZqNp7BN97JwtV6eW",
+            "images": [{
+                "height": 1000,
+                "url": "https://i.scdn.co/image/46326dcb6da3996beb02fe8dbaa0fbb5435f0c72",
+                "width": 1000
+            }, {
+                "height": 640,
+                "url": "https://i.scdn.co/image/8e9b586d652b57271b7d8d78b3907003ab798acc",
+                "width": 640
+            }, {
+                "height": 200,
+                "url": "https://i.scdn.co/image/25c5acd8b74061dab5f0359a226ea268ca4fb77a",
+                "width": 200
+            }, {
+                "height": 64,
+                "url": "https://i.scdn.co/image/185c252ff615f48b3caf28e69ad953ad54f1c447",
+                "width": 64
+            }],
+            "name": "Tigran Hamasyan",
+            "popularity": 46,
+            "type": "artist",
+            "uri": "spotify:artist:0D3h8NZqNp7BN97JwtV6eW"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/0Ek89uaJyo6NfWK22awFvI"
+            },
+            "followers": {
+                "href": null,
+                "total": 66930
+            },
+            "genres": ["alternative r&b", "deep pop r&b", "indie r&b"],
+            "href": "https://api.spotify.com/v1/artists/0Ek89uaJyo6NfWK22awFvI",
+            "id": "0Ek89uaJyo6NfWK22awFvI",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/1cd821498845344b19733a547d7ed0f5cf25fbd1",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/2f92b3453c201a11285d9427ee2be638b9e5fdf1",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/9319d07bc9d5ef7101692a6cb926c5e8477e4036",
+                "width": 160
+            }],
+            "name": "VanJess",
+            "popularity": 53,
+            "type": "artist",
+            "uri": "spotify:artist:0Ek89uaJyo6NfWK22awFvI"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/0FMucZsEnCxs5pqBjHjIc8"
+            },
+            "followers": {
+                "href": null,
+                "total": 190996
+            },
+            "genres": ["adult standards", "bebop", "bossa nova", "christmas", "cool jazz", "jazz", "jazz saxophone", "latin jazz", "vocal jazz"],
+            "href": "https://api.spotify.com/v1/artists/0FMucZsEnCxs5pqBjHjIc8",
+            "id": "0FMucZsEnCxs5pqBjHjIc8",
+            "images": [{
+                "height": 433,
+                "url": "https://i.scdn.co/image/a0385bcc75fbed4084e2978e93a1a1b498790ad0",
+                "width": 284
+            }, {
+                "height": 305,
+                "url": "https://i.scdn.co/image/20f9275d403e7ba4151af924b8733846c4c46d9d",
+                "width": 200
+            }, {
+                "height": 98,
+                "url": "https://i.scdn.co/image/350f499fc21f822d95a2b2fe0a41d0991d6ca395",
+                "width": 64
+            }],
+            "name": "Stan Getz",
+            "popularity": 67,
+            "type": "artist",
+            "uri": "spotify:artist:0FMucZsEnCxs5pqBjHjIc8"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/0GG2cWaonE4JPrjcCCQ1EG"
+            },
+            "followers": {
+                "href": null,
+                "total": 120268
+            },
+            "genres": ["alternative r&b", "electropop", "indie poptimism", "indie r&b", "tropical house", "vapor soul", "vapor twitch"],
+            "href": "https://api.spotify.com/v1/artists/0GG2cWaonE4JPrjcCCQ1EG",
+            "id": "0GG2cWaonE4JPrjcCCQ1EG",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/b04eba3e4fca50c4566d6d78621776962f92c76f",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/472be706ea3cf754dcbd13ecd5369f5bb0710f94",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/db2216e1760b93e7d5431a9e5dc86dd9ec659fa3",
+                "width": 160
+            }],
+            "name": "SG Lewis",
+            "popularity": 68,
+            "type": "artist",
+            "uri": "spotify:artist:0GG2cWaonE4JPrjcCCQ1EG"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/0IVapwlnM3dEOiMsHXsghT"
+            },
+            "followers": {
+                "href": null,
+                "total": 142074
+            },
+            "genres": ["bass music", "chillhop", "chillwave", "future garage", "glitch hop", "indietronica", "microhouse", "wonky"],
+            "href": "https://api.spotify.com/v1/artists/0IVapwlnM3dEOiMsHXsghT",
+            "id": "0IVapwlnM3dEOiMsHXsghT",
+            "images": [{
+                "height": 640,
+                "url": "https://i.scdn.co/image/9765843b7e48bfa3448981af16ae7e6e64472917",
+                "width": 640
+            }, {
+                "height": 320,
+                "url": "https://i.scdn.co/image/72547f301b3ef38b3add87683e1d87f356583a06",
+                "width": 320
+            }, {
+                "height": 160,
+                "url": "https://i.scdn.co/image/c2567b8601665ce63be88e29a7a67a4df48736fe",
+                "width": 160
+            }],
+            "name": "Nosaj Thing",
+            "popularity": 52,
+            "type": "artist",
+            "uri": "spotify:artist:0IVapwlnM3dEOiMsHXsghT"
+        }, {
+            "external_urls": {
+                "spotify": "https://open.spotify.com/artist/0IVcLMMbm05VIjnzPkGCyp"
+            },
+            "followers": {
+                "href": null,
+                "total": 281312
+            },
+            "genres": ["alternative hip hop", "detroit hip hop", "hip hop"],
+            "href": "https://api.spotify.com/v1/artists/0IVcLMMbm05VIjnzPkGCyp",
+            "id": "0IVcLMMbm05VIjnzPkGCyp",
+            "images": [{
+                "height": 1312,
+                "url": "https://i.scdn.co/image/bf1bd61ca9468f0f6328f4095d376826380afe95",
+                "width": 1000
+            }, {
+                "height": 840,
+                "url": "https://i.scdn.co/image/2bd9d99470ef41c8ea60ab31d4b02a411bcc65c6",
+                "width": 640
+            }, {
+                "height": 262,
+                "url": "https://i.scdn.co/image/14778c27dc3944e3895de3b455fa0fdfa5edd725",
+                "width": 200
+            }, {
+                "height": 84,
+                "url": "https://i.scdn.co/image/969adfa36461a09f8a7d71048f6770c601b5b124",
+                "width": 64
+            }],
+            "name": "J Dilla",
+            "popularity": 62,
+            "type": "artist",
+            "uri": "spotify:artist:0IVcLMMbm05VIjnzPkGCyp"
+        }],
+        "next": "https://api.spotify.com/v1/me/following?type=artist&after=0IVcLMMbm05VIjnzPkGCyp&limit=20",
+        "total": 789,
+        "cursors": {
+            "after": "0IVcLMMbm05VIjnzPkGCyp"
+        },
+        "limit": 20,
+        "href": "https://api.spotify.com/v1/me/following?type=artist&limit=20"
+    }
+}
