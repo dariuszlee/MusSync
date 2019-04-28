@@ -22,7 +22,7 @@ import services.spotify.SpotifyRequestActor._
 import db.SpotifyDbActor._
 
 object SpotifyArtistActor {
-  def props(url : String, respond_to: ActorRef, is_debug: Boolean) : Props = Props(new SpotifyArtistActor(url, respond_to, is_debug))
+  def props(url : String, respond_to: ActorRef, is_debug: Boolean, mus_sync_user: String, spot_user_id: String) : Props = Props(new SpotifyArtistActor(url, respond_to, is_debug, mus_sync_user, spot_user_id))
 
   case class HandleJobStart(url: String)
   case class HandleJobStartInternal(url: String)
@@ -41,7 +41,7 @@ object SpotifyArtistActor {
   }
 }
 
-class SpotifyArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean) extends Actor with akka.actor.ActorLogging {
+class SpotifyArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boolean, mus_sync_user: String, spot_user_id: String) extends Actor with akka.actor.ActorLogging {
   import SpotifyArtistActor._
   import SpotifyAlbumActor._
   import SpotifyReleaseActor._
@@ -91,7 +91,7 @@ class SpotifyArtistActor(work_url : String, respond_to: ActorRef, dump_mode: Boo
     }
     case HandleIndividualArtist(artist_id) => {
       if(!album_actor_map.contains(artist_id)){
-        db_actor ! InsertSpotifyArtist(mus_sync_artist, spot_user_id, spotify_artist_id)
+        db_actor ! InsertSpotifyArtist(mus_sync_user, spot_user_id, artist_id)
         val album_actor = context.actorOf(SpotifyAlbumActor.props(artist_id, self), 
           s"artist_$artist_id")
         album_actor_map.put(artist_id, album_actor)
@@ -125,10 +125,13 @@ object TestArtistActor extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = context.dispatcher
 
+  val mus_sync_user = "mus_sync_user"
+  val spot_user_id = "spot_user_id"
+
   val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
 
-  val rel_app = context.actorOf(SpotifyReleaseActor.props(false), "rel-app")
-  val art_actor = context.actorOf(SpotifyArtistActor.props("asdf", rel_app, true), "test_artist")  
+  val rel_app = context.actorOf(SpotifyReleaseActor.props(false, mus_sync_user, spot_user_id), "rel-app")
+  val art_actor = context.actorOf(SpotifyArtistActor.props("asdf", rel_app, true, mus_sync_user, spot_user_id), "test_artist")  
 
   import scala.concurrent.duration._
   art_actor ! HandleJobStart("https://api.spotify.com/v1/me/following?type=artist&limit=20")

@@ -70,7 +70,6 @@ class SessionActor extends PersistentActor {
       session = s
     }
     case SnapshotOffer(_, s : SessionData) => {
-      session = s
       log.info(s"Restore Token $s")
     }
   }

@@ -14,8 +14,10 @@ import scala.concurrent.duration._
 
 import scala.collection.mutable.HashMap
 
+import db.SpotifyDbActor._
+
 object SpotifyReleaseActor {
-  def props(is_debug: Boolean) : Props = Props(new SpotifyReleaseActor(is_debug))
+  def props(is_debug: Boolean, mus_sync_user: String, spot_user_id: String) : Props = Props(new SpotifyReleaseActor(is_debug, mus_sync_user, spot_user_id))
   def initial_url : String = "https://api.spotify.com/v1/me/following?type=artist&limit=20"
 
   case object StartJob
@@ -25,7 +27,7 @@ object SpotifyReleaseActor {
   class EndJob extends Exception
 }
 
-class SpotifyReleaseActor(is_debug: Boolean) extends Actor with akka.actor.ActorLogging {
+class SpotifyReleaseActor(is_debug: Boolean, mus_sync_user: String, spot_user_id: String) extends Actor with akka.actor.ActorLogging {
   import SpotifyReleaseActor._
   import SpotifyArtistActor._
   import context._
@@ -34,6 +36,8 @@ class SpotifyReleaseActor(is_debug: Boolean) extends Actor with akka.actor.Actor
   var completed : Set[String] = Set[String]()
   var completed_actors : HashMap[String, ActorRef] = new HashMap[String, ActorRef]()
   var request_actor = context.actorOf(SpotifyRequestActor.props, "req_actor_root")
+
+  val db_actor = context.actorSelection("/user/db-actor")
 
   var total_artists = 0
   var num_indiv_artists = 0
@@ -53,12 +57,15 @@ class SpotifyReleaseActor(is_debug: Boolean) extends Actor with akka.actor.Actor
 
   override def receive = {
     case StartJob => {
+      db_actor ! InsertMusSyncUser(mus_sync_user, mus_sync_user, "fake_password")
+      val refresh_token = "AQBjrJOtmyOFde6P9qCH_YiSTtURDZErXB-hjzoIv-sn6a7klmF3Kn3DvNGrNM5W91P2moun8QmYEE77jRToBt4OpiePetlb58yiGZRzbZqsz3uqs04P9ljfuXMrcwqrZ2XV7w"
+      db_actor ! InsertSpotifyUser(mus_sync_user, spot_user_id, refresh_token)
       self ! AddUrl(initial_url)
     }
     case AddUrl(uri: String) => {
       if(!completed.contains(uri)){
         val uri_hash = "artist_act_" + BigInt(hash(uri))
-        val get_artists_actor = context.actorOf(SpotifyArtistActor.props(uri, self, is_debug), uri_hash)
+        val get_artists_actor = context.actorOf(SpotifyArtistActor.props(uri, self, is_debug, mus_sync_user, spot_user_id), uri_hash)
         completed = completed + uri
         completed_actors.put(uri, get_artists_actor)
         get_artists_actor ! HandleJobStart(uri)
@@ -99,8 +106,11 @@ object ReleaseApp extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = context.dispatcher
 
+  val mus_sync_user = "mus_sync_user"
+  val spot_user_id = "spot_user_id"
+
   val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
-  val release_app = context.actorOf(SpotifyReleaseActor.props(true), "release-actor")
+  val release_app = context.actorOf(SpotifyReleaseActor.props(true, mus_sync_user, spot_user_id), "release-actor")
   val db_actor = context.actorOf(SpotifyDbActor.props, "db-actor")
 
   release_app ! SpotifyReleaseActor.StartJob
