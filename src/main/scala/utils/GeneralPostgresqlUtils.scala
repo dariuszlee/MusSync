@@ -25,10 +25,36 @@ class PostgresUtils extends Actor with akka.actor.ActorLogging {
     case InitializeEmpty => {
       val statement = connection.createStatement()
 
-      val create_user_table = "CREATE TABLE IF NOT EXISTS mus_sync_user(id varchar UNIQUE NOT NULL, login varchar UNIQUE NOT NULL, password_hash varchar UNIQUE NOT NULL)"
-      val create_spotify_account = "CREATE TABLE IF NOT EXISTS spotify_user(spotify_id VARCHAR UNIQUE NOT NULL, id varchar REFERENCES mus_sync_user(id), refresh_token VARCHAR)"
-      val create_spotify_artist = "CREATE TABLE IF NOT EXISTS spotify_artist(id varchar REFERENCES mus_sync_user(id), spotify_id VARCHAR REFERENCES spotify_user(spotify_id), spotify_artist_id VARCHAR, date_added TIMESTAMP)"
-      val create_spotify_album = "CREATE TABLE IF NOT EXISTS spotify_album(spotify_id VARCHAR REFERENCES spotify_user(spotify_id) NOT NULL, id varchar REFERENCES mus_sync_user(id), spotify_album_id VARCHAR NOT NULL, date_added TIMESTAMP NOT NULL, tag VARCHAR NOT NULL)"
+      val create_user_table = """
+      CREATE TABLE IF NOT EXISTS mus_sync_user(
+        id varchar UNIQUE NOT NULL, 
+        login varchar UNIQUE NOT NULL, 
+        password_hash varchar UNIQUE NOT NULL
+      )"""
+
+      val create_spotify_account = """
+      CREATE TABLE IF NOT EXISTS spotify_user(
+        spotify_id VARCHAR UNIQUE NOT NULL, 
+        id varchar REFERENCES mus_sync_user(id), 
+        refresh_token VARCHAR)"""
+
+      val create_spotify_artist = """
+      CREATE TABLE IF NOT EXISTS spotify_artist(
+        id varchar REFERENCES mus_sync_user(id) NOT NULL, 
+        spotify_id VARCHAR REFERENCES spotify_user(spotify_id) NOT NULL, 
+        spotify_artist_id VARCHAR NOT NULL, 
+        date_added TIMESTAMP, 
+        PRIMARY KEY (id, spotify_id, spotify_artist_id))"""
+
+      val create_spotify_album = """
+      CREATE TABLE IF NOT EXISTS spotify_album(
+        spotify_id VARCHAR REFERENCES spotify_user(spotify_id) NOT NULL, 
+        id varchar REFERENCES mus_sync_user(id), 
+        spotify_album_id VARCHAR NOT NULL, 
+        date_added TIMESTAMP NOT NULL, 
+        tag VARCHAR NOT NULL, 
+        PRIMARY KEY (id, spotify_id, spotify_album_id)
+      )"""
 
       statement.execute(create_user_table)
       statement.execute(create_spotify_account)
@@ -62,6 +88,7 @@ object PostgresqlTest extends App {
 
   val postgres = context.actorOf(PostgresUtils.props, "postgres") 
   postgres ! RemoveDbs 
+  println("Removed. Recreate dbs....")
   postgres ! InitializeEmpty
 
   readLine()

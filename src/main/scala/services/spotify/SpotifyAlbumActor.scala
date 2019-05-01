@@ -12,10 +12,10 @@ import play.api.libs.json.JsString
 import play.api.libs.json.JsDefined
 
 import SpotifyRequestActor._
-import db.SpotifyDbActor
+import db.SpotifyDbActor._
 
 object SpotifyAlbumActor {
-  def props(artist_id: String, respond_to: ActorRef) : Props = Props(new SpotifyAlbumActor(artist_id, respond_to))
+  def props(artist_id: String, respond_to: ActorRef, mus_sync_id: String, spotify_user_id: String, to_dump: Boolean) : Props = Props(new SpotifyAlbumActor(artist_id, respond_to, mus_sync_id, spotify_user_id, to_dump))
 
   case object StartAlbumJob
   case class FirstAlbumResponse(res: SpotifyResponse)
@@ -28,7 +28,7 @@ object SpotifyAlbumActor {
   case object Shutdown
 }
 
-class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef) extends Actor with akka.actor.ActorLogging {
+class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef, mus_sync_id: String, spotify_user_id: String, to_dump: Boolean) extends Actor with akka.actor.ActorLogging {
   import services.spotify.SpotifyAlbumActor._
   import services.spotify.SpotifyArtistActor._
 
@@ -69,8 +69,12 @@ class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef) extends Actor w
       }
     }
     case HandleAlbumList(albums) => {
-      import SpotifyDbActor.{DumpAlbums}
-      db_actor ! DumpAlbums("fake_user", albums.map(x => ((x \ "id").as[String])))
+      // db_actor ! DumpAlbums("fake_user", albums.map(x => ((x \ "id").as[String])))
+      for(album <- albums){
+        val album_id = (album \ "id").as[String]
+        db_actor ! InsertSpotifyAlbum(mus_sync_id, spotify_user_id, album_id, AlbumTag.Old)
+// InsertSpotifyAlbum(mus_id: String, spotify_id: String, spotify_album_id: String, tag: AlbumTag)
+      }
     }
     case CheckAlbumStatus => {
       for(album_request <- album_requests_urls){
@@ -112,7 +116,7 @@ object TestAlbumActor extends App {
   val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
   val db_actor = context.actorOf(SpotifyDbActor.props, "db_actor")
 
-  val alb_act = context.actorOf(SpotifyAlbumActor.props("1vCWHaC5f2uS3yhpwWbIA6", mock), "alb-act")  
+  val alb_act = context.actorOf(SpotifyAlbumActor.props("1vCWHaC5f2uS3yhpwWbIA6", mock, "test", "test_a", true), "alb-act")  
   alb_act ! StartAlbumJob
 
   readLine()

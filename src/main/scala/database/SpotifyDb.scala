@@ -20,11 +20,7 @@ object AlbumTag extends Enumeration {
 import AlbumTag._
 
 object SpotifyDbActor {
-  case class DumpAlbums(user_id: String, album_ids : Seq[String])
-  case class InsertSpotifyItem(id: String)
   case class PSQLExceptionWrapper(ex: PSQLException)
-  case object GetUnique
-  case class CheckIfCurrent(art_id: String, alb_id: String, from: ActorRef, respond_with: Boolean => Object)
 
   case class InsertMusSyncUser(mus_id: String, mus_user_id: String, password: String)
   case class InsertSpotifyUser(mus_id: String, spotify_id: String, refresh_token: String)
@@ -137,8 +133,6 @@ object SpotifyDbTests extends App {
   val test_actor = system.actorOf(Props(new TestActor()), "test_actor")
 
   dbActor ! InsertSpotifyArtist("asdf", "asdf", "asdf")
-  // dbActor ! CheckIfCurrent("asdf", "asdf", test_actor, TestActor.MyCurrentCheck)
-  // dbActor ! CreateDbs
 
   readLine()
   system.terminate()

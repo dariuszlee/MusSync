@@ -120,6 +120,5 @@ object ReleaseApp extends App {
   // Halt execution
   readLine()
   // Clean-up here
-  db_actor ! GetUnique
   context.terminate()
 }
