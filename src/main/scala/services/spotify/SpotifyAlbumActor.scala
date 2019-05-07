@@ -12,6 +12,7 @@ import play.api.libs.json.JsString
 import play.api.libs.json.JsDefined
 
 import SpotifyRequestActor._
+
 import db.SpotifyDbActor._
 
 object SpotifyAlbumActor {
@@ -107,6 +108,7 @@ object TestAlbumActor extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = context.dispatcher
   import SpotifyAlbumActor._
+  import db.SpotifyDbActor
 
   import akka.testkit.TestProbe
   val probe : TestProbe = new TestProbe(context);

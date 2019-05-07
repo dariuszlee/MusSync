@@ -13,19 +13,26 @@ import org.postgresql.util.PSQLException
 import java.sql.Timestamp
 import java.util.Calendar
 
-object AlbumTag extends Enumeration {
-  type AlbumTag = Value
-  val New, Seen, Disliked, Liked, Old = Value
-}
-import AlbumTag._
+import db._
+
 
 object SpotifyDbActor {
+  trait AlbumClass
+  object AlbumTag {
+    case object New extends AlbumClass
+    case object Seen extends AlbumClass
+    case object Disliked extends AlbumClass
+    case object Liked extends AlbumClass
+    case object Old extends AlbumClass
+  }
+    
   case class PSQLExceptionWrapper(ex: PSQLException)
 
   case class InsertMusSyncUser(mus_id: String, mus_user_id: String, password: String)
   case class InsertSpotifyUser(mus_id: String, spotify_id: String, refresh_token: String)
-  case class InsertSpotifyAlbum(mus_id: String, spotify_id: String, spotify_album_id: String, tag: AlbumTag)
+  case class InsertSpotifyAlbum(mus_id: String, spotify_id: String, spotify_album_id: String, tag: AlbumClass)
   case class InsertSpotifyArtist(mus_id: String, spotify_id: String, spotify_artist_id: String)
+
 
   def props = Props(new SpotifyDbActor)
 }
@@ -60,7 +67,7 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
         case psqlEx : PSQLException => {
           log.error(s"ERROR: $psqlEx")
         }
-        case _ => {}
+        case _ : Throwable => {}
       }
       prepared.close()
     }
@@ -75,7 +82,7 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
         case psqlEx : PSQLException => {
           log.error(s"ERROR: $psqlEx")
         }
-        case _ => {}
+        case _ : Throwable => {}
       }
       prepared.close()
     }
@@ -90,7 +97,7 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
       }
       catch {
         case psqlEx : PSQLException => {}
-        case _ => {}
+        case _ : Throwable => {}
       }
       prepared.close()
     }
@@ -107,7 +114,7 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
         case psqlEx : PSQLException => {
           log.error(s"Error $psqlEx")
         }
-        case _ => {}
+        case _ : Throwable => {}
       }
       prepared.close()
     }
@@ -115,24 +122,14 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
 }
 
 object SpotifyDbTests extends App {
-  object TestActor{
-    case class MyCurrentCheck(v: Boolean)
-  }
-  class TestActor extends Actor {
-    def receive = {
-      case TestActor.MyCurrentCheck(yes_or_no) => println("Answer is: ", yes_or_no)
-    }
-  }
-
-  import SpotifyDbActor._
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  val dbActor = system.actorOf(Props(new SpotifyDbActor()), "spotifyDb")
-  val test_actor = system.actorOf(Props(new TestActor()), "test_actor")
+  val dbActor = system.actorOf(SpotifyDbActor.props, "spotifyDb")
+  val test_actor = system.actorOf(SpotifyDbActor.props, "test_actor")
 
-  dbActor ! InsertSpotifyArtist("asdf", "asdf", "asdf")
+  dbActor ! SpotifyDbActor.InsertSpotifyArtist("asdf", "asdf", "asdf")
 
   readLine()
   system.terminate()
