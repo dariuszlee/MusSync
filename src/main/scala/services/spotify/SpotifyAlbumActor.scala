@@ -35,7 +35,7 @@ class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef, mus_sync_id: St
 
   val url = s"https://api.spotify.com/v1/artists/$artist_id/albums"
   val req_actor = context.actorSelection("/user/req_actor")
-  val db_actor = context.actorSelection("/user/db_actor")
+  val db_actor = context.actorSelection("/user/db-actor")
 
   var total_albums = 0
 

@@ -22,5 +22,8 @@ libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.11.1"
 libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.11.1"
 libraryDependencies += "org.apache.logging.log4j" %% "log4j-api-scala" % "11.0"
 
+// Command line parsing
+libraryDependencies += "commons-cli" % "commons-cli" % "1.2"
+
 // DB
 libraryDependencies += "org.postgresql" % "postgresql" % "42.2.5"

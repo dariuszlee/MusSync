@@ -99,26 +99,47 @@ class SpotifyReleaseActor(is_debug: Boolean, mus_sync_user: String, spot_user_id
 }
 
 object ReleaseApp extends App {
-  import db.SpotifyDbActor
-  import db.SpotifyDbActor._
 
-  implicit val context = ActorSystem()
-  implicit val materializer = ActorMaterializer()
-  implicit val executionContext = context.dispatcher
+  def parse_args(args: Array[String]) : Map[String,String] = {
+    import org.apache.commons.cli._
+    var arg_map = Map[String,String]()
+    
+     
+    return arg_map
+  } 
 
-  val mus_sync_user = "mus_sync_user"
-  val spot_user_id = "spot_user_id"
+  override def main(args: Array[String]) = {
+    val arg_map = parse_args(args)
 
-  val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
-  val release_app = context.actorOf(SpotifyReleaseActor.props(true, mus_sync_user, spot_user_id), "release-actor")
-  val db_actor = context.actorOf(SpotifyDbActor.props, "db-actor")
+    import db.SpotifyDbActor
+    import db.SpotifyDbActor._
 
-  release_app ! SpotifyReleaseActor.StartJob
+    implicit val context = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+    implicit val executionContext = context.dispatcher
 
-  context.scheduler.schedule(3000 milliseconds, 3000 milliseconds, release_app, SpotifyReleaseActor.CheckJob)
+    val mus_sync_user = "mus_sync_user"
+    val spot_user_id = "spot_user_id"
 
-  // Halt execution
-  readLine()
-  // Clean-up here
-  context.terminate()
+    // Infra actors
+    val db_actor = context.actorOf(SpotifyDbActor.props, "db-actor")
+    val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
+
+
+    var release_app = if(arg_map.get("dump_mode").getOrElse("false") == "true"){
+      context.actorOf(SpotifyReleaseActor.props(true, mus_sync_user, spot_user_id), "release-actor")
+    }
+    else {
+      context.actorOf(SpotifyReleaseActor.props(false, mus_sync_user, spot_user_id), "release-actor")
+    }
+
+    release_app ! SpotifyReleaseActor.StartJob
+
+    context.scheduler.schedule(3000 milliseconds, 3000 milliseconds, release_app, SpotifyReleaseActor.CheckJob)
+
+    // Halt execution
+    readLine()
+    // Clean-up here
+    context.terminate()
+  }
 }
