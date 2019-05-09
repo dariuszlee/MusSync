@@ -70,11 +70,15 @@ class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef, mus_sync_id: St
       }
     }
     case HandleAlbumList(albums) => {
-      // db_actor ! DumpAlbums("fake_user", albums.map(x => ((x \ "id").as[String])))
       for(album <- albums){
         val album_id = (album \ "id").as[String]
-        db_actor ! InsertSpotifyAlbum(mus_sync_id, spotify_user_id, album_id, AlbumTag.Old)
-// InsertSpotifyAlbum(mus_id: String, spotify_id: String, spotify_album_id: String, tag: AlbumTag)
+        if(to_dump)
+        {
+          db_actor ! InsertSpotifyAlbum(mus_sync_id, spotify_user_id, album_id, AlbumTag.Old)
+        }
+        else{
+          db_actor ! InsertSpotifyAlbum(mus_sync_id, spotify_user_id, album_id, AlbumTag.New)
+        }
       }
     }
     case CheckAlbumStatus => {

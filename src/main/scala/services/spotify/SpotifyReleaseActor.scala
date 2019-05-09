@@ -1,5 +1,10 @@
 package services.spotify
 
+import org.apache.commons.cli._
+import org.apache.commons.cli.DefaultParser
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Level
+
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.actor.Actor
@@ -100,15 +105,18 @@ class SpotifyReleaseActor(is_debug: Boolean, mus_sync_user: String, spot_user_id
 
 object ReleaseApp extends App {
 
-  def parse_args(args: Array[String]) : Map[String,String] = {
-    import org.apache.commons.cli._
-    var arg_map = Map[String,String]()
+  def parse_args(args: Array[String]) : CommandLine = {
     
-     
-    return arg_map
+    val options : Options = new Options()
+    options.addOption(new Option("d", "debug", false, "Turn on debug."))
+    val parser : CommandLineParser = new DefaultParser()
+    val cmd : CommandLine = parser.parse(options, args)
+    
+    return cmd
   } 
 
   override def main(args: Array[String]) = {
+    @transient lazy val log = LogManager.getLogger(getClass.getName)
     val arg_map = parse_args(args)
 
     import db.SpotifyDbActor
@@ -126,10 +134,12 @@ object ReleaseApp extends App {
     val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
 
 
-    var release_app = if(arg_map.get("dump_mode").getOrElse("false") == "true"){
+    var release_app = if(arg_map.hasOption("d")){
+      log.error("Application in dump mode...")
       context.actorOf(SpotifyReleaseActor.props(true, mus_sync_user, spot_user_id), "release-actor")
     }
     else {
+      log.error("Application in normal mode...")
       context.actorOf(SpotifyReleaseActor.props(false, mus_sync_user, spot_user_id), "release-actor")
     }
 
