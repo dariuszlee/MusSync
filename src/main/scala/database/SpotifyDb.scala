@@ -49,7 +49,7 @@ class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
   val spotify_artist_db_params = "id, spotify_id, spotify_artist_id, date_added"
   val spotify_album_db_params = "id, spotify_id, spotify_album_id, date_added, tag"
 
-  val connection : Connection = DriverManager.getConnection(url, username, "ma456tilda")
+  val connection : Connection = DriverManager.getConnection(url, username, "test")
 
   val calendar = Calendar.getInstance()
 
