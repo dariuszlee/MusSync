@@ -23,6 +23,7 @@ object SpotifyAlbumActor {
 
   case class GetAlbum(uri: String)
   case class GetAlbumResponse(res: SpotifyResponse)
+  case class HandleDumpAlbumRequest(res: SpotifyResponse)
   case class HandleAlbumList(albums : Seq[JsObject])
 
   case object CheckAlbumStatus
@@ -56,8 +57,19 @@ class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef, mus_sync_id: St
     }
     case GetAlbumResponse(SpotifyResponse(res, req)) => {
       album_requests_urls = album_requests_urls - req.uri
-      self ! HandleAlbumList((res \ "items").as[Seq[JsObject]])
 
+      if(to_dump){
+        self ! HandleDumpAlbumRequest(SpotifyResponse(res, req))
+      }
+      else {
+        self ! HandleAlbumList()
+      }
+    }
+    case HandleDumpAlbumRequest(SpotifyResponse(res,req)) => {
+      (res \ "items").as[Seq[JsObject]].foreach(album => {
+        val album_id = (album \ "id").as[String]
+        db_actor ! InsertSpotifyAlbum(mus_sync_id, spotify_user_id, album_id, AlbumTag.Old)
+      })
       res \ "next" match {
         case JsDefined(JsString(next)) => {
           self ! GetAlbum(next)
@@ -69,17 +81,8 @@ class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef, mus_sync_id: St
         }
       }
     }
-    case HandleAlbumList(albums) => {
-      for(album <- albums){
-        val album_id = (album \ "id").as[String]
-        if(to_dump)
-        {
-          db_actor ! InsertSpotifyAlbum(mus_sync_id, spotify_user_id, album_id, AlbumTag.Old)
-        }
-        else{
-          db_actor ! InsertSpotifyAlbum(mus_sync_id, spotify_user_id, album_id, AlbumTag.New)
-        }
-      }
+    case HandleAlbumList(albums, next) => {
+      
     }
     case CheckAlbumStatus => {
       for(album_request <- album_requests_urls){
@@ -120,7 +123,7 @@ object TestAlbumActor extends App {
 
   import akka.routing.SmallestMailboxPool
   val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
-  val db_actor = context.actorOf(SpotifyDbActor.props, "db_actor")
+  val db_actor = context.actorOf(SpotifyDbActor.props("localhost"), "db_actor")
 
   val alb_act = context.actorOf(SpotifyAlbumActor.props("1vCWHaC5f2uS3yhpwWbIA6", mock, "test", "test_a", true), "alb-act")  
   alb_act ! StartAlbumJob

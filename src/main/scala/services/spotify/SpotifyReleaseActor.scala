@@ -1,7 +1,6 @@
 package services.spotify
 
 import org.apache.commons.cli._
-import org.apache.commons.cli.DefaultParser
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Level
 
@@ -106,9 +105,9 @@ class SpotifyReleaseActor(is_debug: Boolean, mus_sync_user: String, spot_user_id
 object ReleaseApp extends App {
 
   def parse_args(args: Array[String]) : CommandLine = {
-    
     val options : Options = new Options()
     options.addOption(new Option("d", "debug", false, "Turn on debug."))
+    options.addOption(new Option("h", "db_host", true, "Db host"))
     val parser : CommandLineParser = new DefaultParser()
     val cmd : CommandLine = parser.parse(options, args)
     
@@ -130,7 +129,7 @@ object ReleaseApp extends App {
     val spot_user_id = "spot_user_id"
 
     // Infra actors
-    val db_actor = context.actorOf(SpotifyDbActor.props, "db-actor")
+    val db_actor = context.actorOf(SpotifyDbActor.props(arg_map.getOptionValue("db_host", "localhost")), "db-actor")
     val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
 
 

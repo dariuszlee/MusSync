@@ -33,23 +33,23 @@ object SpotifyDbActor {
   case class InsertSpotifyAlbum(mus_id: String, spotify_id: String, spotify_album_id: String, tag: AlbumClass)
   case class InsertSpotifyArtist(mus_id: String, spotify_id: String, spotify_artist_id: String)
 
-
-  def props = Props(new SpotifyDbActor)
+  def props(host: String) = Props(new SpotifyDbActor(host))
 }
 
-class SpotifyDbActor extends Actor with akka.actor.ActorLogging {
+class SpotifyDbActor(host: String) extends Actor with akka.actor.ActorLogging {
   import SpotifyDbActor._
 
   val driver : String = "org.postgresql.Driver"
   val username = "dariuslee"
-  val url = "jdbc:postgresql:mus_sync_test"
+  val url = s"jdbc:postgresql://$host/mus_sync_test"
+  println(url)
 
   val mus_sync_db_params = "id, login, password_hash"
   val spotify_user_db_params = "spotify_id, id, refresh_token"
   val spotify_artist_db_params = "id, spotify_id, spotify_artist_id, date_added"
   val spotify_album_db_params = "id, spotify_id, spotify_album_id, date_added, tag"
 
-  val connection : Connection = DriverManager.getConnection(url, username, "test")
+  val connection : Connection = DriverManager.getConnection(url, username, "ma456tilda")
 
   val calendar = Calendar.getInstance()
 
@@ -127,8 +127,7 @@ object SpotifyDbTests extends App {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  val dbActor = system.actorOf(SpotifyDbActor.props, "spotifyDb")
-  val test_actor = system.actorOf(SpotifyDbActor.props, "test_actor")
+  val dbActor = system.actorOf(SpotifyDbActor.props("localhost"), "spotifyDb")
 
   dbActor ! SpotifyDbActor.InsertSpotifyArtist("asdf", "asdf", "asdf")
 

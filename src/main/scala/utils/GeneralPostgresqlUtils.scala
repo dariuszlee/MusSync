@@ -7,18 +7,20 @@ import akka.stream.ActorMaterializer
 import java.sql.DriverManager
 import java.sql.Connection
 
+import org.apache.commons.cli._
+
 object PostgresUtils {
-  def props : Props = Props(new PostgresUtils())
+  def props(host: String) : Props = Props(new PostgresUtils(host))
 
   case object InitializeEmpty
   case object RemoveDbs
 }
 
-class PostgresUtils extends Actor with akka.actor.ActorLogging {
+class PostgresUtils(host: String) extends Actor with akka.actor.ActorLogging {
   import PostgresUtils._
 
   val username = "dariuslee"
-  val url = "jdbc:postgresql:mus_sync_test"
+  val url = s"jdbc:postgresql://$host/mus_sync_test"
   val connection : Connection = DriverManager.getConnection(url, username, "ma456tilda")
 
   override def receive = {
@@ -80,17 +82,32 @@ class PostgresUtils extends Actor with akka.actor.ActorLogging {
 }
 
 object PostgresqlTest extends App {
-  implicit val context = ActorSystem()
-  implicit val materializer = ActorMaterializer()
-  implicit val executionContext = context.dispatcher
+  def parse_args(args: Array[String]) : CommandLine = {
+    val options : Options = new Options()
+    options.addOption(new Option("h", "db_host", true, "Db_host"))
+    val parser : CommandLineParser = new DefaultParser()
+    val cmd : CommandLine = parser.parse(options, args)
+    
+    return cmd
+  } 
 
-  import PostgresUtils._
+  override def main(args: Array[String]) = {
+    var arg_map = parse_args(args)
+    arg_map.getOptions().foreach(x => println(x))
 
-  val postgres = context.actorOf(PostgresUtils.props, "postgres") 
-  postgres ! RemoveDbs 
-  println("Removed. Recreate dbs....")
-  postgres ! InitializeEmpty
+    implicit val context = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+    implicit val executionContext = context.dispatcher
 
-  readLine()
-  context.terminate()
+    import PostgresUtils._
+
+    println(arg_map.getOptionValue("h", "localhost"))
+    val postgres = context.actorOf(PostgresUtils.props(arg_map.getOptionValue("db_host", "localhost")), "postgres") 
+    postgres ! RemoveDbs 
+    println("Removed. Recreate dbs....")
+    postgres ! InitializeEmpty
+
+    readLine()
+    context.terminate()
+  }
 }
