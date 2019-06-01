@@ -8,7 +8,7 @@ class LikeButton extends React.Component {
 
   render() {
       return <button onClick={() => this.setState({ liked: true })}>
-               Like
+               Like Everything 
              </button>
   }
 }
