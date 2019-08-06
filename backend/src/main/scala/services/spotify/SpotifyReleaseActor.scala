@@ -144,7 +144,7 @@ object ReleaseApp extends App {
 
     release_app ! SpotifyReleaseActor.StartJob
 
-    context.scheduler.schedule(3000 milliseconds, 3000 milliseconds, release_app, SpotifyReleaseActor.CheckJob)
+    context.scheduler.schedule(10000 milliseconds, 3000 milliseconds, release_app, SpotifyReleaseActor.CheckJob)
 
     // Halt execution
     readLine()

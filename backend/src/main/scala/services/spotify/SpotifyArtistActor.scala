@@ -136,7 +136,7 @@ object TestArtistActor extends App {
 
   import scala.concurrent.duration._
   art_actor ! HandleJobStart("https://api.spotify.com/v1/me/following?type=artist&limit=20")
-  context.scheduler.schedule(3000 milliseconds, 3000 milliseconds, art_actor, SpotifyArtistActor.CheckStatus)
+  context.scheduler.schedule(10000 milliseconds, 5000 milliseconds, art_actor, SpotifyArtistActor.CheckStatus)
 
   readLine()
   context.terminate()

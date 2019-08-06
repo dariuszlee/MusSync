@@ -14,6 +14,7 @@ import java.sql.Timestamp
 import java.util.Calendar
 
 import db._
+import services.spotify.SpotifyAlbumActor.AlbumInfo
 
 
 object SpotifyDbActor {
@@ -30,7 +31,14 @@ object SpotifyDbActor {
 
   case class InsertMusSyncUser(mus_id: String, mus_user_id: String, password: String)
   case class InsertSpotifyUser(mus_id: String, spotify_id: String, refresh_token: String)
+
+  // Album cases
   case class InsertSpotifyAlbum(mus_id: String, spotify_id: String, spotify_album_id: String, tag: AlbumClass)
+  case class InsertSpotifyAlbumInfo(album_info: AlbumInfo, tag: AlbumClass)
+  case class CheckAlbumExistence(ablum_info: AlbumInfo)
+  case class AlbumExists(ablum_info: AlbumInfo)
+
+  // Artist Cases
   case class InsertSpotifyArtist(mus_id: String, spotify_id: String, spotify_artist_id: String)
 
   def props(host: String) = Props(new SpotifyDbActor(host))
@@ -103,6 +111,37 @@ class SpotifyDbActor(host: String) extends Actor with akka.actor.ActorLogging {
       }
       prepared.close()
     }
+    case InsertSpotifyAlbumInfo(album_info, album_tag) => {
+      self ! InsertSpotifyAlbum(album_info.mus_id, album_info.spotify_id, album_info.spotify_album_id, album_tag)
+    }
+    case CheckAlbumExistence(album_info) => {
+      val spot_user_id = album_info.spotify_id
+      val mus_sync_user = album_info.mus_id
+      val spotify_album_id = album_info.spotify_album_id
+      val query_str = s"SELECT * FROM spotify_album WHERE spotify_id='$spot_user_id' AND id='$mus_sync_user' AND spotify_album_id='$spotify_album_id'"
+      log.info(s"Executing Check Album Existence: $query_str")
+      val prepared = connection.prepareStatement(query_str)
+      try {
+        val does_item_exist = prepared.executeQuery().next()
+        if(!does_item_exist){
+          self ! InsertSpotifyAlbumInfo(album_info, AlbumTag.New)
+        }
+        else {
+          sender() ! AlbumExists(album_info)
+        }
+      }
+      catch {
+        case psqlEx : PSQLException => {}
+        {
+          log.error(s"Error $psqlEx")
+        }
+        case _ : Throwable => {}
+      }
+      finally {
+        prepared.close()
+      }
+       
+    }
     case InsertSpotifyArtist(mus_sync_user, spot_user_id, spotify_artist_id) => {
       val time = new Timestamp(calendar.getTime().getTime())
       val query_str = s"INSERT INTO spotify_artist($spotify_artist_db_params) VALUES('$mus_sync_user', '$spot_user_id', '$spotify_artist_id', '$time')"
@@ -130,6 +169,8 @@ object SpotifyDbTests extends App {
   val dbActor = system.actorOf(SpotifyDbActor.props("localhost"), "spotifyDb")
 
   dbActor ! SpotifyDbActor.InsertSpotifyArtist("asdf", "asdf", "asdf")
+  // dbActor ! SpotifyDbActor.CheckAlbumExistence("mus_sync_user", "spot_user_id", "6pwdy6oQdwSQo8XOfpfAJJ")
+  // dbActor ! SpotifyDbActor.CheckAlbumExistence("mus_sync_user", "spot_user_id", "pwdy6oQdwSQo8XOfpfAJJ")
 
   readLine()
   system.terminate()

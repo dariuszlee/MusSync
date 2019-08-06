@@ -10,6 +10,7 @@ import play.api.libs.json.JsObject
 import play.api.libs.json.JsNull
 import play.api.libs.json.JsString
 import play.api.libs.json.JsDefined
+import play.api.libs.json.JsArray
 
 import SpotifyRequestActor._
 
@@ -24,8 +25,10 @@ object SpotifyAlbumActor {
   case class GetAlbum(uri: String)
   case class GetAlbumResponse(res: SpotifyResponse)
   case class HandleDumpAlbumRequest(res: SpotifyResponse)
-  case class HandleAlbumList(albums : Seq[JsObject])
+  case class HandleAlbumList(albums : Seq[AlbumInfo])
+  case class HandleNext(next_uri: Option[String])
 
+  case class AlbumInfo(mus_id: String, spotify_id: String, spotify_album_id: String)
   case object CheckAlbumStatus
   case object Shutdown
 }
@@ -62,7 +65,23 @@ class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef, mus_sync_id: St
         self ! HandleDumpAlbumRequest(SpotifyResponse(res, req))
       }
       else {
-        self ! HandleAlbumList()
+        val albums = (res \ "items").as[Seq[JsObject]].map(album_js => {
+          AlbumInfo(mus_sync_id, spotify_user_id, (album_js \ "id").as[String])
+        })
+        self ! HandleAlbumList(albums)
+      }
+
+      val next_data = (res \ "next").asOpt[String]
+      self ! HandleNext(next_data)
+    }
+    case HandleAlbumList(albums) => {
+      albums match {
+        case Seq() => println("empty")
+        case head +: tail => {
+          db_actor ! CheckAlbumExistence(head)
+          self ! HandleAlbumList(tail)
+        }
+        case _ => log.error("What is this???: {}", albums)
       }
     }
     case HandleDumpAlbumRequest(SpotifyResponse(res,req)) => {
@@ -70,19 +89,23 @@ class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef, mus_sync_id: St
         val album_id = (album \ "id").as[String]
         db_actor ! InsertSpotifyAlbum(mus_sync_id, spotify_user_id, album_id, AlbumTag.Old)
       })
-      res \ "next" match {
-        case JsDefined(JsString(next)) => {
-          self ! GetAlbum(next)
+      val next_data = (res \ "next").asOpt[String]
+      self ! HandleNext(next_data)
+    }
+    case HandleNext(next_option) => {
+      next_option match {
+        case Some(next_uri) => {
+          self ! GetAlbum(next_uri)
         }
-        case JsDefined(JsNull) => {
+        case None => {
           log.info("Getting albums from artists collection finished...")
-          respond_to ! CompletedIndividualArtist(artist_id)
           self ! Shutdown // We want the shutdown message to be the last message sent 
         }
       }
     }
-    case HandleAlbumList(albums, next) => {
-      
+    case AlbumExists(album_info) => {
+      log.info("Found Existing album: {}", album_info)
+      self ! Shutdown
     }
     case CheckAlbumStatus => {
       for(album_request <- album_requests_urls){
@@ -90,7 +113,8 @@ class SpotifyAlbumActor(artist_id: String, respond_to: ActorRef, mus_sync_id: St
       }
     }
     case Shutdown => {
-      log.info("Shutding down {}...", artist_id)
+      log.info("Shuting down {}...", artist_id)
+      respond_to ! CompletedIndividualArtist(artist_id)
       context.stop(self)
     }
   }
@@ -123,9 +147,9 @@ object TestAlbumActor extends App {
 
   import akka.routing.SmallestMailboxPool
   val requestActors = context.actorOf(SmallestMailboxPool(5).props(SpotifyRequestActor.props(materializer)), "req_actor")
-  val db_actor = context.actorOf(SpotifyDbActor.props("localhost"), "db_actor")
+  val db_actor = context.actorOf(SpotifyDbActor.props("localhost"), "db-actor")
 
-  val alb_act = context.actorOf(SpotifyAlbumActor.props("1vCWHaC5f2uS3yhpwWbIA6", mock, "test", "test_a", true), "alb-act")  
+  val alb_act = context.actorOf(SpotifyAlbumActor.props("1vCWHaC5f2uS3yhpwWbIA6", mock, "mus_sync_user", "spot_user_id", false), "alb-act")  
   alb_act ! StartAlbumJob
 
   readLine()

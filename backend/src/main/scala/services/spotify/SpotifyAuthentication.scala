@@ -83,7 +83,7 @@ class SpotifyTokenUtils(implicit mat: Materializer, ex: ExecutionContext,
   val tokenUri = "https://accounts.spotify.com/api/token"
   val refreshToken = "AQBjrJOtmyOFde6P9qCH_YiSTtURDZErXB-hjzoIv-sn6a7klmF3Kn3DvNGrNM5W91P2moun8QmYEE77jRToBt4OpiePetlb58yiGZRzbZqsz3uqs04P9ljfuXMrcwqrZ2XV7w"
 
-  val timeout = 1 second
+  val timeout = 5 second
 
   def refresh_token() : String = {
     var body = s"grant_type=refresh_token&refresh_token=$refreshToken&redirect_uri=$callback&client_id=$client_id&client_secret=$client_secret"
@@ -109,7 +109,7 @@ class TokenActor(implicit mat: Materializer) extends Actor {
   import SessionActor._
   import context.dispatcher
   import context.system
-  implicit val timeout : Timeout = 1 second
+  implicit val timeout : Timeout = 3 second
 
   val client_id = "40b76927fb1a4841b2114bcda79e829a"
   val client_secret = "7eb1825fb44845b8bd463f9e883fa9a9"
